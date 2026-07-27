@@ -61,4 +61,15 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour="3", minute="0"),
         "options": {"queue": "maintenance"},
     },
+    # Publisher
+    "publish-scheduled-posts": {
+        "task": "celery_app.tasks.publisher.publish_scheduled_posts",
+        "schedule": crontab(minute="*/5"),  # Every 5 minutes
+        "options": {"queue": "default"},
+    },
+    "auto-queue-events": {
+        "task": "celery_app.tasks.publisher.auto_queue_events",
+        "schedule": crontab(minute="*/30"),  # Every 30 minutes
+        "options": {"queue": "default"},
+    },
 }

@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 from src.config import settings
 from src.common.logging import logger
 from src.bot.handlers.start import router as start_router
+from src.bot.handlers.publisher import router as publisher_router
 from src.bot.middlewares.user_registration import UserRegistrationMiddleware
 
 
@@ -28,6 +29,7 @@ def create_dispatcher() -> Dispatcher:
 
     # Register routers
     dp.include_router(start_router)
+    dp.include_router(publisher_router)
 
     # Register middlewares
     dp.message.middleware(UserRegistrationMiddleware())

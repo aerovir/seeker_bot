@@ -38,6 +38,13 @@ class NotificationType(str, Enum):
     TEST = "test"
 
 
+class PostStatus(str, Enum):
+    PENDING = "pending"
+    SCHEDULED = "scheduled"
+    PUBLISHED = "published"
+    SKIPPED = "skipped"
+
+
 # Limits
 MAX_USER_CITIES = 5
 MAX_USER_CATEGORIES = 10

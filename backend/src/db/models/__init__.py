@@ -10,6 +10,7 @@ from src.db.models.source import ContentSource, SourceItem, SourceDefaultCategor
 from src.db.models.category import Category
 from src.db.models.city import City
 from src.db.models.notification import NotificationLog
+from src.db.models.post_queue import PostQueue
 
 __all__ = [
     "User",
@@ -24,4 +25,5 @@ __all__ = [
     "Category",
     "City",
     "NotificationLog",
+    "PostQueue",
 ]
