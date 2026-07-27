@@ -1,0 +1,99 @@
+# Cities configuration for Seeker Bot
+# Morphological forms for gazetteer-based city classification
+
+cities:
+  - slug: moscow
+    name_ru: "Москва"
+    name_en: "Moscow"
+    name_ru_prepositional: "в Москве"
+    name_ru_genitive: "Москвы"
+    region: "Москва"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 55.7558
+    longitude: 37.6173
+    aliases: ["msk", "москва", "москве"]
+
+  - slug: saint-petersburg
+    name_ru: "Санкт-Петербург"
+    name_en: "Saint Petersburg"
+    name_ru_prepositional: "в Санкт-Петербурге"
+    name_ru_genitive: "Санкт-Петербурга"
+    region: "Ленинградская область"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 59.9311
+    longitude: 30.3609
+    aliases: ["spb", "питер", "петербург", "санкт-петербург"]
+
+  - slug: kazan
+    name_ru: "Казань"
+    name_en: "Kazan"
+    name_ru_prepositional: "в Казани"
+    name_ru_genitive: "Казани"
+    region: "Татарстан"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 55.7961
+    longitude: 49.1064
+    aliases: ["казань"]
+
+  - slug: nizhny-novgorod
+    name_ru: "Нижний Новгород"
+    name_en: "Nizhny Novgorod"
+    name_ru_prepositional: "в Нижнем Новгороде"
+    name_ru_genitive: "Нижнего Новгорода"
+    region: "Нижегородская область"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 56.2965
+    longitude: 43.9366
+    aliases: ["нн", "нижний"]
+
+  - slug: ekaterinburg
+    name_ru: "Екатеринбург"
+    name_en: "Ekaterinburg"
+    name_ru_prepositional: "в Екатеринбурге"
+    name_ru_genitive: "Екатеринбурга"
+    region: "Свердловская область"
+    country: "Россия"
+    timezone: "Asia/Yekaterinburg"
+    latitude: 56.8389
+    longitude: 60.6057
+    aliases: ["екатеринбург", "екат"]
+
+  - slug: novosibirsk
+    name_ru: "Новосибирск"
+    name_en: "Novosibirsk"
+    name_ru_prepositional: "в Новосибирске"
+    name_ru_genitive: "Новосибирска"
+    region: "Новосибирская область"
+    country: "Россия"
+    timezone: "Asia/Novosibirsk"
+    latitude: 55.0084
+    longitude: 82.9357
+    aliases: ["новосибирск"]
+
+  - slug: krasnodar
+    name_ru: "Краснодар"
+    name_en: "Krasnodar"
+    name_ru_prepositional: "в Краснодаре"
+    name_ru_genitive: "Краснодара"
+    region: "Краснодарский край"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 45.0355
+    longitude: 38.9753
+    aliases: ["краснодар"]
+
+  - slug: vladivostok
+    name_ru: "Владивосток"
+    name_en: "Vladivostok"
+    name_ru_prepositional: "во Владивостоке"
+    name_ru_genitive: "Владивостока"
+    region: "Приморский край"
+    country: "Россия"
+    timezone: "Asia/Vladivostok"
+    latitude: 43.1155
+    longitude: 131.8855
+    aliases: ["владивосток"]
