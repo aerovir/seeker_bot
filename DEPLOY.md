@@ -212,12 +212,70 @@ sentry_sdk.init(
 - `notifications_sent_total` — отправлено уведомлений
 
 ### Логирование (structlog)
+
 ```bash
-# Просмотр логов в реальном времени
+# Просмотр логов Docker
 docker compose logs -f bot
 docker compose logs -f celery-worker
 docker compose logs -f api
+
+# Чтение файлового лога (на хосте)
+tail -50 /var/log/seeker_bot/seeker_bot.log
+
+# Фильтр по уровню
+grep ERROR /var/log/seeker_bot/seeker_bot.log | tail -20
+
+# Следить в реальном времени
+tail -f /var/log/seeker_bot/seeker_bot.log
 ```
+
+### SSH-доступ к логам
+
+```bash
+# Через ~/.ssh/config:
+#   Host seeker-bot
+#       HostName <IP>
+#       User <username>
+#       IdentityFile ~/.ssh/seeker_bot_deploy
+
+# Tail лога
+ssh seeker-bot "tail -50 /var/log/seeker_bot/seeker_bot.log"
+
+# Docker логи
+ssh seeker-bot "cd /opt/seeker_bot && docker compose logs --tail=50 bot"
+
+# Статус
+ssh seeker-bot "cd /opt/seeker_bot && docker compose ps"
+
+# Скрипт-помощник
+./scripts/logs.sh -s      # статистика
+./scripts/logs.sh -d      # markdown-отчёт
+./scripts/logs.sh -c bot  # логи Docker-контейнера
+```
+
+### Настройка сервера (однократно)
+
+```bash
+scp scripts/setup-server.sh user@host:/tmp/
+ssh user@host "bash /tmp/setup-server.sh"
+```
+
+Скрипт `setup-server.sh`:
+- Устанавливает Docker, Nginx, certbot, logrotate
+- Создаёт `/opt/seeker_bot` и `/var/log/seeker_bot`
+- Настраивает logrotate (ежедневная ротация, 14 дней хранения)
+- Создаёт пользователя `deploy` в группе `docker`
+- Добавляет alias'ы для удобного просмотра логов
+
+### Инфраструктура логов
+
+| Ресурс | Путь |
+|--------|------|
+| Файл лога (в контейнере) | `/var/log/seeker_bot/seeker_bot.log` |
+| Файл лога (на хосте) | Docker volume `seeker_bot_logs` |
+| Ротация | `/etc/logrotate.d/seeker_bot` (ежедневно, 14 дней) |
+| Размер буфера | 10 MB на файл, 5 backup'ов |
+| Переменная | `LOG_DIR` (по умолчанию `/var/log/seeker_bot`)
 
 ---
 

@@ -8,6 +8,8 @@ services:
     container_name: seeker-bot
     env_file:
       - .env
+    environment:
+      - LOG_DIR=/var/log/seeker_bot
     depends_on:
       postgres:
         condition: service_healthy
@@ -15,7 +17,8 @@ services:
         condition: service_healthy
     command: python -m src.bot.main
     restart: unless-stopped
-    # Production: no volume mount — use built image
+    volumes:
+      - seeker_bot_logs:/var/log/seeker_bot
 
   api:
     build:
@@ -24,6 +27,8 @@ services:
     container_name: seeker-api
     env_file:
       - .env
+    environment:
+      - LOG_DIR=/var/log/seeker_bot
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,6 +38,8 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    volumes:
+      - seeker_bot_logs:/var/log/seeker_bot
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -46,6 +53,8 @@ services:
     container_name: seeker-celery-worker
     env_file:
       - .env
+    environment:
+      - LOG_DIR=/var/log/seeker_bot
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,6 +62,8 @@ services:
         condition: service_healthy
     command: celery -A celery_app.celery worker -l info -Q high_priority,default,notifications,maintenance --concurrency=4
     restart: unless-stopped
+    volumes:
+      - seeker_bot_logs:/var/log/seeker_bot
 
   celery-beat:
     build:
@@ -61,11 +72,15 @@ services:
     container_name: seeker-celery-beat
     env_file:
       - .env
+    environment:
+      - LOG_DIR=/var/log/seeker_bot
     depends_on:
       - redis
       - postgres
     command: celery -A celery_app.celery beat -l info
     restart: unless-stopped
+    volumes:
+      - seeker_bot_logs:/var/log/seeker_bot
 
   postgres:
     image: postgres:16-alpine
@@ -100,3 +115,4 @@ services:
 volumes:
   pgdata:
   redis_data:
+  seeker_bot_logs:
