@@ -1,0 +1,110 @@
+version: "3.9"
+
+services:
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: seeker-bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m src.bot.main
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__/  # prevent host __pycache__ from overwriting container
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: seeker-api
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__/
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: seeker-celery-worker
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A celery_app.celery worker -l info -Q high_priority,default,notifications,maintenance
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__/
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: seeker-celery-beat
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    command: celery -A celery_app.celery beat -l info
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__/
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: seeker-postgres
+    environment:
+      POSTGRES_DB: seeker_bot
+      POSTGRES_USER: seeker
+      POSTGRES_PASSWORD: seeker_dev_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seeker -d seeker_bot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: seeker-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redis_data:
