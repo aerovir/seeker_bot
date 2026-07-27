@@ -140,31 +140,28 @@ commit + log
 - Сортировка: is_featured DESC, start_date ASC, created_at DESC
 - Пагинация: page + page_size (default 20, max 100)
 
+## TMA Frontend (Phase 3)
+
+React + TypeScript + Vite (@tma.js SDK). Структура:
+
 ```
-ContentSource (RSS/API/Scrape)
-    │
-    ▼
-RSSFetcher.fetch() → raw bytes
-    │
-    ▼
-RSSParser.parse() → list[RawEvent]
-    │
-    ▼
-CategoryClassifier.classify() + CityClassifier.extract() → RawEvent.categories, .cities
-    │
-    ▼
-Deduplicator.filter_new() → RawEvent (только новые)
-    │
-    ▼
-Enricher.enrich_all() → list[EnrichedEvent] (цены, билеты)
-    │
-    ▼
-EventService.create_from_raw() → Event DB model (c category/city assignments)
-    │
-    ▼
-commit + log
+frontend/
+├── src/
+│   ├── api/client.ts          — HTTP клиент (initData авторизация)
+│   ├── hooks/useTMA.ts        — Telegram WebApp API
+│   ├── hooks/useFeed.ts       — Лента + infinite scroll
+│   ├── hooks/usePreferences.ts — Города/категории
+│   ├── pages/Feed.tsx         — Лента событий
+│   ├── pages/EventDetail.tsx  — Детальная карточка
+│   ├── pages/Settings.tsx     — Настройки (CityPicker + CategoryPicker)
+│   ├── pages/Search.tsx       — Поиск
+│   ├── components/  — EventCard, CityPicker, CategoryPicker, TicketButton, Navigation
+│   ├── utils/format.ts        — Форматирование дат/цен
+│   └── styles.css             — Адаптивный дизайн (светлая/тёмная тема)
+├── index.html                 — Подключает telegram-web-app.js
+├── vite.config.ts             — Прокси /api → backend:8000
+└── package.json
 ```
 
-**Классификация**: pymorphy3 лемматизация + keyword matching (Tier 1). Города — gazetteer по морфологическим формам.
-**Дедупликация**: по source_item_guid (SHA256 title+link).
-**Источники**: 18 RSS-лент в `data/sources.yml`.
+**Разработка**: `npm run dev` (порт 5173).
+**Сборка**: `npm run build` → `dist/`.

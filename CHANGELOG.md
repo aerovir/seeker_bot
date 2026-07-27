@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.4.0] — 2026-07-27
+
+### Added
+- ✨ TMA Frontend: React + TypeScript + Vite (@tma.js SDK)
+- ✨ Страницы: Feed, EventDetail, Settings, Search
+- ✨ Компоненты: EventCard, CityPicker, CategoryPicker, TicketButton, Navigation
+- ✨ API client с initData авторизацией
+- ✨ Hooks: useTMA, useFeed, usePreferences
+- ✨ Адаптивная CSS (светлая/тёмная тема Telegram)
+- ✨ Infinite scroll, поиск по событиям
+- ✨ Сборка проходит чисто (0 errors)
+
 ## [0.3.0] — 2026-07-27
 
 ### Added
