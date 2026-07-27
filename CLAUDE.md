@@ -112,3 +112,59 @@ commit + log
 **Классификация**: pymorphy3 лемматизация + keyword matching (Tier 1). Города — gazetteer по морфологическим формам.
 **Дедупликация**: по source_item_guid (SHA256 title+link).
 **Источники**: 18 RSS-лент в `data/sources.yml`.
+
+## Архитектура Phase 2 (TMA API)
+
+### Endpoints
+
+| Метод | Путь | Auth | Описание |
+|-------|------|------|----------|
+| GET | `/health` | — | Health check |
+| GET | `/api/v1/feed` | — | Публичная лента событий (пагинация) |
+| GET | `/api/v1/events` | — | Список событий с фильтрами (?city_id, ?category_id, ?event_type) |
+| GET | `/api/v1/events/{id}` | — | Детальная карточка события |
+| GET | `/api/v1/cities` | — | Список городов |
+| GET | `/api/v1/categories` | — | Список категорий с эмодзи |
+| GET | `/api/v1/preferences/` | `tma {initData}` | Текущие настройки пользователя |
+| PUT | `/api/v1/preferences/` | `tma {initData}` | Обновить города и категории |
+| GET | `/api/v1/preferences/cities` | `tma {initData}` | Выбранные города |
+| GET | `/api/v1/preferences/categories` | `tma {initData}` | Выбранные категории |
+
+**Аутентификация TMA**: `Authorization: tma {initData}`, где initData — строка из Telegram WebApp.
+
+### FeedService персонализация
+- Фильтр по городам (OR)
+- Фильтр по категориям (OR)
+- Статус = PUBLISHED
+- Дата: start_date >= now OR end_date >= now
+- Сортировка: is_featured DESC, start_date ASC, created_at DESC
+- Пагинация: page + page_size (default 20, max 100)
+
+```
+ContentSource (RSS/API/Scrape)
+    │
+    ▼
+RSSFetcher.fetch() → raw bytes
+    │
+    ▼
+RSSParser.parse() → list[RawEvent]
+    │
+    ▼
+CategoryClassifier.classify() + CityClassifier.extract() → RawEvent.categories, .cities
+    │
+    ▼
+Deduplicator.filter_new() → RawEvent (только новые)
+    │
+    ▼
+Enricher.enrich_all() → list[EnrichedEvent] (цены, билеты)
+    │
+    ▼
+EventService.create_from_raw() → Event DB model (c category/city assignments)
+    │
+    ▼
+commit + log
+```
+
+**Классификация**: pymorphy3 лемматизация + keyword matching (Tier 1). Города — gazetteer по морфологическим формам.
+**Дедупликация**: по source_item_guid (SHA256 title+link).
+**Источники**: 18 RSS-лент в `data/sources.yml`.

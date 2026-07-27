@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.3.0] — 2026-07-27
+
+### Added
+- ✨ TMA верификация initData (HMAC-SHA256) через Authorization header
+- ✨ Pydantic схемы: EventOut, EventDetailOut, FeedResponse, PreferencesUpdate, CityOut, CategoryOut
+- ✨ Public API: GET /api/v1/feed, /events, /events/:id, /cities, /categories
+- ✨ Authenticated API: GET/PUT /api/v1/preferences/ + city/category sub-endpoints
+- ✨ FeedService — персонализированная лента (фильтр по городу + категории + дате)
+- ✨ FeedService — get_upcoming_events (7 дней), get_today_events
+- ✨ UserService — get_or_create, set_city_preferences, set_category_preferences
+- ✨ API dependency get_current_user — аутентификация через initData
+- ✨ 26 новых тестов (всего 87, все проходят)
+
 ## [0.2.0] — 2026-07-27
 
 ### Added
