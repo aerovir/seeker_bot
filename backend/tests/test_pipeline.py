@@ -69,7 +69,7 @@ class TestAggregationPipeline:
 
             # 5. Enrich
             mock_enr = MagicMock()
-            mock_enr.enrich_all.return_value = [MagicMock(title="Event 1")]
+            mock_enr.enrich_all = AsyncMock(return_value=[MagicMock(title="Event 1")])
             mock_enr_cls.return_value = mock_enr
 
             # 6. Store

@@ -58,7 +58,7 @@ class AggregationPipeline:
                 return PipelineResult(created=[])
 
             # 5. Enrich
-            enriched_events = self._enrich(raw_events)
+            enriched_events = await self._enrich(raw_events)
 
             # 6. Store
             created = await self._store(enriched_events)
@@ -115,10 +115,10 @@ class AggregationPipeline:
         await dedup.build_index(self.source.slug, self.source.id)
         return await dedup.filter_new(events)
 
-    def _enrich(self, events: list) -> list:
+    async def _enrich(self, events: list) -> list:
         """Enrich events with tickets, prices, images."""
         enricher = Enricher(self.session)
-        return enricher.enrich_all(events)
+        return await enricher.enrich_all(events)
 
     async def _store(self, events: list) -> list:
         """Store enriched events in the database."""

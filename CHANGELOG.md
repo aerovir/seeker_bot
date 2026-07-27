@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.6.0] — 2026-07-27
+
+### Added
+- ✨ TicketAdapters: YandexAfishaAdapter, KassirAdapter, DirectLinkAdapter + BaseTicketAdapter
+- ✨ TicketInfo dataclass с price, provider, availability
+- ✨ Enricher.integration: _enrich_tickets с перебором адаптеров
+- ✨ NotificationService: send_digest, send_breaking_news, send_mass_notification
+- ✨ NotificationService: get_digest_events (по предпочтениям пользователя)
+- ✨ Daily + Weekly digest (Celery задачи, настоящая реализация вместо placeholder)
+- ✨ _event_matches_preferences — проверка города/категории перед уведомлением
+- ✨ 20 новых тестов (всего 116, все проходят)
+- ✨ Pipeline: enrich_all теперь async (интеграция с ticket адаптерами)
+
 ## [0.5.0] — 2026-07-27
 
 ### Added
