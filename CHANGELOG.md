@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.0.0] — 2026-07-27
+
+### Added
+- ✨ Интеграционные тесты на SQLite in-memory (12 тестов, всего 128)
+- ✨ CI через GitHub Actions (backend + frontend)
+- ✨ docker-compose.prod.yml для продакшен-развёртывания
+- ✨ README.md с полной документацией
+- ✨ .env.example — обновлён с комментариями
+- ✅ Финальная проверка: 128/128 тестов, TypeScript 0 errors, Vite build успешен
+
 ## [0.6.0] — 2026-07-27
 
 ### Added
