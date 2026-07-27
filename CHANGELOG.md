@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [0.2.0] — 2026-07-27
+
+### Added
+- ✨ Content Pipeline: AggregationPipeline (fetch → parse → classify → dedup → enrich → store)
+- ✨ RSSFetcher — асинхронная загрузка RSS-лент через aiohttp
+- ✨ RSSParser — парсинг RSS/Atom в RawEvent через feedparser
+- ✨ CategoryClassifier — классификация категорий (pymorphy3 + keyword matching)
+- ✨ CityClassifier — извлечение города из текста (gazetteer + морфология)
+- ✨ Deduplicator — дедупликация по source_item_guid
+- ✨ Enricher — обогащение событий (извлечение цен из текста)
+- ✨ EventService.create_from_raw() — сохранение событий с категориями и городами
+- ✨ Celery app + Beat schedule + aggregation tasks
+- ✨ data/sources.yml — 18 реальных RSS-лент культуры РФ
+- ✨ 37 новых тестов (всего 61, все проходят)
+
 ## [0.1.0] — 2026-07-27
 
 ### Added

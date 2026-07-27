@@ -66,7 +66,10 @@ docker compose up -d
 pytest -v
 
 # Запуск конкретного теста
-pytest tests/test_parser.py -v -k "test_rss_feed"
+pytest tests/test_rss_parser.py -v -k "test_rss_feed"
+
+# Запуск всех тестов Phase 1 (content pipeline)
+pytest tests/test_aggregator_models.py tests/test_rss_fetcher.py tests/test_rss_parser.py tests/test_category_classifier.py tests/test_city_classifier.py tests/test_deduplicator.py tests/test_event_service.py tests/test_pipeline.py tests/test_celery.py -v
 
 # Миграции БД
 alembic revision --autogenerate -m "description"
@@ -78,3 +81,34 @@ celery -A celery_app.celery worker -l info
 # Celery beat (планировщик)
 celery -A celery_app.celery beat -l info
 ```
+
+## Архитектура Phase 1 (Content Pipeline)
+
+```
+ContentSource (RSS/API/Scrape)
+    │
+    ▼
+RSSFetcher.fetch() → raw bytes
+    │
+    ▼
+RSSParser.parse() → list[RawEvent]
+    │
+    ▼
+CategoryClassifier.classify() + CityClassifier.extract() → RawEvent.categories, .cities
+    │
+    ▼
+Deduplicator.filter_new() → RawEvent (только новые)
+    │
+    ▼
+Enricher.enrich_all() → list[EnrichedEvent] (цены, билеты)
+    │
+    ▼
+EventService.create_from_raw() → Event DB model (c category/city assignments)
+    │
+    ▼
+commit + log
+```
+
+**Классификация**: pymorphy3 лемматизация + keyword matching (Tier 1). Города — gazetteer по морфологическим формам.
+**Дедупликация**: по source_item_guid (SHA256 title+link).
+**Источники**: 18 RSS-лент в `data/sources.yml`.

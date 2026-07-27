@@ -1,0 +1,142 @@
+# Sources configuration for Seeker Bot
+# Content sources for Russian cultural events and news
+#
+# Priority levels:
+#   2 = high (every 15 min) — major city culture portals
+#   1 = normal (every 30 min) — museum/theatre specific feeds
+#   0 = low (every 2 hours) — regional or niche sources
+
+sources:
+  # --- Moscow ---
+  - name: "KudaGo Москва"
+    slug: "kudago-msk"
+    source_type: rss
+    feed_url: "https://kudago.com/msk/rss/"
+    priority: 2
+    default_city_slug: moscow
+    fetch_interval_minutes: 15
+    timeout_seconds: 30
+
+  - name: "KudaGo Санкт-Петербург"
+    slug: "kudago-spb"
+    source_type: rss
+    feed_url: "https://kudago.com/spb/rss/"
+    priority: 2
+    default_city_slug: saint-petersburg
+    fetch_interval_minutes: 15
+    timeout_seconds: 30
+
+  - name: "TimeOut Москва"
+    slug: "timeout-msk"
+    source_type: rss
+    feed_url: "https://www.timeout.ru/events/rss"
+    priority: 2
+    default_city_slug: moscow
+    fetch_interval_minutes: 15
+    timeout_seconds: 30
+
+  # --- Museums & Galleries ---
+  - name: "Третьяковская галерея — Новости"
+    slug: "tretyakov-news"
+    source_type: rss
+    feed_url: "https://www.tretyakovgallery.ru/rss/news/"
+    priority: 1
+    default_city_slug: moscow
+    fetch_interval_minutes: 30
+
+  - name: "Третьяковская галерея — Выставки"
+    slug: "tretyakov-exhibitions"
+    source_type: rss
+    feed_url: "https://www.tretyakovgallery.ru/rss/exhibitions/"
+    priority: 1
+    default_city_slug: moscow
+    fetch_interval_minutes: 30
+
+  - name: "ГМИИ им. Пушкина"
+    slug: "pushkin-museum"
+    source_type: rss
+    feed_url: "https://pushkinmuseum.art/rss/"
+    priority: 1
+    default_city_slug: moscow
+    fetch_interval_minutes: 30
+
+  - name: "Эрмитаж"
+    slug: "hermitage"
+    source_type: rss
+    feed_url: "https://www.hermitagemuseum.org/news/rss/"
+    priority: 1
+    default_city_slug: saint-petersburg
+    fetch_interval_minutes: 30
+
+  - name: "Русский музей"
+    slug: "russian-museum"
+    source_type: rss
+    feed_url: "https://www.rusmuseum.ru/rss/"
+    priority: 1
+    default_city_slug: saint-petersburg
+    fetch_interval_minutes: 30
+
+  # --- Theatres ---
+  - name: "Большой театр — Афиша"
+    slug: "bolshoi-poster"
+    source_type: rss
+    feed_url: "https://www.bolshoi.ru/rss/performances/"
+    priority: 1
+    default_city_slug: moscow
+    fetch_interval_minutes: 30
+
+  - name: "Мариинский театр — Афиша"
+    slug: "mariinsky-poster"
+    source_type: rss
+    feed_url: "https://www.mariinsky.ru/rss/poster/"
+    priority: 1
+    default_city_slug: saint-petersburg
+    fetch_interval_minutes: 30
+
+  # --- Cinema ---
+  - name: "Кинопоиск — Новости"
+    slug: "kinopoisk-news"
+    source_type: rss
+    feed_url: "https://www.kinopoisk.ru/rss/news.xml"
+    priority: 1
+    fetch_interval_minutes: 30
+
+  # --- Culture portals ---
+  - name: "Культура.рф — Новости"
+    slug: "culture-rf-news"
+    source_type: rss
+    feed_url: "https://www.culture.ru/rss/news"
+    priority: 2
+    fetch_interval_minutes: 15
+
+  - name: "Культура.рф — Афиша"
+    slug: "culture-rf-poster"
+    source_type: rss
+    feed_url: "https://www.culture.ru/rss/poster"
+    priority: 2
+    fetch_interval_minutes: 15
+
+  # --- City culture portals ---
+  - name: "Афиша Daily"
+    slug: "afisha-daily"
+    source_type: rss
+    feed_url: "https://daily.afisha.ru/export/rss/"
+    priority: 1
+    fetch_interval_minutes: 30
+
+  # --- Regional ---
+  - name: "Яндекс Афиша — Казань"
+    slug: "yandex-afisha-kazan"
+    source_type: rss
+    feed_url: "https://afisha.yandex.ru/kazan/rss"
+    priority: 0
+    default_city_slug: kazan
+    fetch_interval_minutes: 120
+
+  - name: "Яндекс Афиша — Нижний Новгород"
+    slug: "yandex-afisha-nn"
+    source_type: rss
+    feed_url: "https://afisha.yandex.ru/nizhny-novgorod/rss"
+    priority: 0
+    default_city_slug: nizhny-novgorod
+    fetch_interval_minutes: 120
