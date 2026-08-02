@@ -177,6 +177,100 @@ class TestPublisherService:
         assert len(posts) == 1
         assert posts[0].event_id == 1
 
+    @pytest.mark.asyncio
+    async def test_auto_queue_complete_event_no_validation(self):
+        """Полное событие публикуется без валидации."""
+        from src.services.publisher_service import PublisherService
+
+        mock_session = AsyncMock()
+        mock_session.commit = AsyncMock()
+        service = PublisherService(mock_session)
+
+        event = _create_mock_event(
+            title="Полное",
+            description="Описание",
+            image_url="http://img/1.jpg",
+            venue_name="Зал",
+            venue_address="ул. Тест, 1",
+            start_date=datetime(2026, 8, 15, tzinfo=timezone.utc),
+        )
+
+        with patch.object(service, "get_candidates", return_value=[event]), \
+             patch.object(service, "schedule_post", new=AsyncMock()) as mock_sched, \
+             patch("src.services.publisher_service.validate_event") as mock_val:
+            queued = await service.auto_queue_candidates()
+
+        assert queued == 1
+        mock_sched.assert_awaited_once()
+        mock_val.assert_not_awaited()
+        assert event.status != "rejected"
+
+    @pytest.mark.asyncio
+    async def test_auto_queue_incomplete_validated_and_enriched(self):
+        """Неполное событие валидируется, обогащается и публикуется."""
+        from src.services.publisher_service import PublisherService
+
+        mock_session = AsyncMock()
+        mock_session.commit = AsyncMock()
+        service = PublisherService(mock_session)
+
+        event = _create_mock_event(
+            title="Неполное",
+            description="<p>Описание события</p>",
+            start_date=datetime(2026, 8, 15, tzinfo=timezone.utc),
+        )
+
+        class FakeResult:
+            valid = True
+            source = "rss"
+            description = "<p>Описание события</p>"
+            short_description = "Описание события"
+            image_url = "http://img/1.jpg"
+            venue_name = "Зал"
+            venue_address = "ул. Тест, 1"
+
+        with patch.object(service, "get_candidates", return_value=[event]), \
+             patch.object(service, "schedule_post", new=AsyncMock()) as mock_sched, \
+             patch("src.services.publisher_service.validate_event",
+                   return_value=FakeResult()) as mock_val:
+            queued = await service.auto_queue_candidates()
+
+        assert queued == 1
+        mock_val.assert_awaited_once()
+        mock_sched.assert_awaited_once()
+        assert event.image_url == "http://img/1.jpg"
+        assert event.venue_name == "Зал"
+        assert event.status != "rejected"
+
+    @pytest.mark.asyncio
+    async def test_auto_queue_incomplete_rejected(self):
+        """Неполное событие не найдено при валидации → REJECTED."""
+        from src.services.publisher_service import PublisherService
+
+        mock_session = AsyncMock()
+        mock_session.commit = AsyncMock()
+        service = PublisherService(mock_session)
+
+        event = _create_mock_event(
+            title="Мёртвое",
+            description="<p>Описание</p>",
+            start_date=datetime(2026, 8, 15, tzinfo=timezone.utc),
+        )
+
+        class FakeResult:
+            valid = False
+            source = "none"
+
+        with patch.object(service, "get_candidates", return_value=[event]), \
+             patch.object(service, "schedule_post", new=AsyncMock()) as mock_sched, \
+             patch("src.services.publisher_service.validate_event",
+                   return_value=FakeResult()):
+            queued = await service.auto_queue_candidates()
+
+        assert queued == 0
+        mock_sched.assert_not_awaited()
+        assert event.status == "rejected"
+
 
 def _create_mock_event(**kwargs) -> MagicMock:
     """Create a mock Event-like object."""

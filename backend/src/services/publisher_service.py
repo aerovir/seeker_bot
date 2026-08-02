@@ -15,6 +15,7 @@ from src.db.models.post_queue import PostQueue
 from src.common.constants import EventStatus, PostStatus
 from src.common.logging import logger
 from src.config import settings
+from src.aggregator.validators.event_validator import validate_event, html_to_text
 
 
 class PublisherService:
@@ -331,6 +332,11 @@ class PublisherService:
     async def auto_queue_candidates(self, max_per_batch: int = 5, delay_minutes: int = 60) -> int:
         """Automatically queue candidates for publication.
 
+        Публикуем только «живые» проверенные мероприятия:
+        - полное событие (описание, фото, место/адрес, дата) → в очередь сразу
+        - неполное → валидация: сверка с источниками; если найдено и живо —
+          обогащаем недостающие поля и в очередь; если нет — статус REJECTED.
+
         Args:
             max_per_batch: Max events to queue.
             delay_minutes: Delay before each publication.
@@ -342,11 +348,61 @@ class PublisherService:
         queued = 0
 
         for i, event in enumerate(candidates):
-            # Stagger publication times
-            stagger = i * 15  # 15 min between posts
-            await self.schedule_post(event, delay_minutes=delay_minutes + stagger)
+            if self._is_complete(event):
+                await self.schedule_post(event, delay_minutes=delay_minutes + i * 15)
+                queued += 1
+                continue
 
-        return len(candidates)
+            # Валидация неполного события
+            result = await validate_event(self.session, event)
+            if result.valid:
+                self._enrich_event(event, result)
+                await self.schedule_post(event, delay_minutes=delay_minutes + i * 15)
+                queued += 1
+                logger.info(
+                    "event_validated",
+                    event_id=event.id,
+                    source=result.source,
+                    title=event.title[:60],
+                )
+            else:
+                event.status = EventStatus.REJECTED
+                logger.info(
+                    "event_rejected",
+                    event_id=event.id,
+                    title=event.title[:60],
+                )
+
+        await self.session.commit()
+        return queued
+
+    @staticmethod
+    def _is_complete(event: Event) -> bool:
+        """Полное ли событие — все поля для публикации без валидации."""
+        return bool(
+            event.description
+            and event.image_url
+            and event.venue_name
+            and event.venue_address
+            and event.start_date
+        )
+
+    @staticmethod
+    def _enrich_event(event: Event, result) -> None:
+        """Заполнить недостающие поля события из результата валидации."""
+        if result.description and not event.description:
+            event.description = result.description
+        if result.short_description and not event.short_description:
+            event.short_description = result.short_description
+        if result.image_url and not event.image_url:
+            event.image_url = result.image_url
+        if result.venue_name and not event.venue_name:
+            event.venue_name = result.venue_name
+        if result.venue_address and not event.venue_address:
+            event.venue_address = result.venue_address
+        # Синхронизировать short_description из description, если пусто
+        if not event.short_description and event.description:
+            event.short_description = html_to_text(event.description)
 
     @staticmethod
     def _get_event_emoji(event_type: str) -> str:

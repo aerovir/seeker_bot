@@ -76,9 +76,17 @@ class EnrichedEvent:
 
     @classmethod
     def from_raw(cls, raw: RawEvent) -> "EnrichedEvent":
+        # short_description: чистый текст из description (HTML→текст),
+        # чтобы описание доходило до поста в канале.
+        short_description = None
+        if raw.description:
+            from src.aggregator.validators.event_validator import html_to_text
+            short_description = html_to_text(raw.description) or None
+
         return cls(
             title=raw.title,
             description=raw.description,
+            short_description=short_description,
             content_source_id=raw.content_source_id,
             source_slug=raw.source_slug,
             source_item_guid=raw.source_item_guid,
