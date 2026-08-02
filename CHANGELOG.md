@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [1.3.0] — 2026-08-02
+
+### Added
+- 🚀 **Публикация мероприятий в Telegram-канал** (@ccode_art) — автопубликация по расписанию работает
+
+### Fixed (для публикации)
+- 🐛 **Celery async-задачи падали** (`attached to a different loop`) — prefork + `asyncio.run()` + общий engine с пулом. Фикс: отдельный NullPool-engine для celery (`celery_session_factory`) + `--pool=solo`
+- 🐛 **`greenlet_spawn has not been called`** при публикации — ленивая загрузка `assignment.city/category` в async-контексте. Фикс: вложенные `selectinload` в celery-задаче и admin-хендлерах
+- 🐛 **Inline-кнопка «Подробнее» с относительной ссылкой** — Telegram отклоняет `URL host is empty`. Фикс: RSS-парсер склеивает относительный `link` с доменом источника
+- 🔧 Вручную исправлены 211 относительных URL в БД (события до фикса парсера)
+
+### Verified
+- ✅ Бот — админ канала, публикация прошла (пост «Ани Лорак», message_id=5)
+- ✅ 10 постов в очереди, автопубликация по расписанию (каждые 5 мин)
+- ✅ 151 тест проходит
+
 ## [1.2.0] — 2026-08-02
 
 ### Added
