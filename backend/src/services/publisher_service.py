@@ -11,7 +11,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.db.models.event import Event
+from src.db.models.event import Event, EventCityAssignment
 from src.db.models.post_queue import PostQueue
 from src.common.constants import EventStatus, PostStatus
 from src.common.logging import logger
@@ -359,6 +359,9 @@ class PublisherService:
 
         for i, event in enumerate(candidates):
             if self._is_complete(event):
+                # Полное событие — публикуем, но город из адреса места
+                # перекрывает классификаторный
+                await self._apply_venue_city(event)
                 await self.schedule_post(event, delay_minutes=delay_minutes + i * 15)
                 queued += 1
                 continue
@@ -367,6 +370,7 @@ class PublisherService:
             result = await validate_event(self.session, event)
             if result.valid:
                 self._enrich_event(event, result)
+                await self._apply_venue_city(event)
                 await self.schedule_post(event, delay_minutes=delay_minutes + i * 15)
                 queued += 1
                 logger.info(
@@ -416,6 +420,48 @@ class PublisherService:
         # Синхронизировать short_description из description, если пусто
         if not event.short_description and event.description:
             event.short_description = html_to_text(event.description)
+
+    async def _apply_venue_city(self, event: Event) -> None:
+        """Приоритет города из адреса места над классификаторным.
+
+        Адрес события (Schema.org): «ул. Петровка, 21, Москва». Город —
+        последний элемент после запятой. Сопоставляем с City и заменяем
+        EventCityAssignment, чтобы хэштег/город в посте были верными.
+        """
+        if not event.venue_address:
+            return
+
+        parts = [p.strip() for p in event.venue_address.split(",")]
+        candidate = parts[-1].strip() if parts else ""
+        # Отсечь региональные части («Краснодарский край, г Геленджик»)
+        candidate = candidate.replace("г ", "").replace("г. ", "").strip()
+        if not candidate or len(candidate) < 3:
+            return
+
+        from src.db.models.city import City
+        from sqlalchemy import select
+
+        stmt = select(City).where(City.name_ru.ilike(f"%{candidate}%"))
+        result = await self.session.execute(stmt)
+        city = result.scalar_one_or_none()
+        if not city:
+            return
+
+        # Заменить город события (убрать старые назначения, поставить верный)
+        if event.cities:
+            event.cities.clear()
+        assignment = EventCityAssignment(
+            city_id=city.id,
+            confidence=1.0,
+            method="venue_address",
+        )
+        event.cities.append(assignment)
+        logger.info(
+            "event_city_from_venue",
+            event_id=event.id,
+            city=city.name_ru,
+            address=event.venue_address[:60],
+        )
 
     @staticmethod
     def _get_event_emoji(event_type: str) -> str:
