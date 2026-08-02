@@ -193,10 +193,13 @@ class PublisherService:
         if price_str:
             lines.append(f"💰 {price_str}")
 
-        # Description
-        if event.short_description:
+        # Description — fallback на html_to_text(description) если short пуст
+        desc_text = event.short_description
+        if not desc_text and isinstance(event.description, str) and event.description:
+            desc_text = html_to_text(event.description)
+        if desc_text:
             lines.append("")
-            lines.append(event.short_description[:300])
+            lines.append(desc_text[:300])
 
         # Categories
         cat_names = []
