@@ -189,6 +189,7 @@ class TestPublisherService:
         event = _create_mock_event(
             title="Полное",
             description="Описание",
+            short_description="Описание",
             image_url="http://img/1.jpg",
             venue_name="Зал",
             venue_address="ул. Тест, 1",

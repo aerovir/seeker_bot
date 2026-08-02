@@ -47,11 +47,14 @@ class PublisherService:
             .where(
                 Event.status == EventStatus.PUBLISHED,
                 Event.id.notin_(queued_subq),
+                # Только будущие события: новостные ленты (Lenta, Газета)
+                # дают прошедшие даты — это не афиши, публиковать их нельзя
+                Event.start_date >= datetime.now(timezone.utc),
             )
             # event.source — lazy relationship, нужен для валидации
             # (feed_url); без eager-load в async падает greenlet_spawn
             .options(selectinload(Event.source))
-            .order_by(Event.is_featured.desc(), Event.created_at.desc())
+            .order_by(Event.is_featured.desc(), Event.start_date.asc())
             .limit(limit)
         )
 
@@ -383,12 +386,15 @@ class PublisherService:
     @staticmethod
     def _is_complete(event: Event) -> bool:
         """Полное ли событие — все поля для публикации без валидации."""
+        now = datetime.now(timezone.utc)
         return bool(
             event.description
+            and event.short_description
             and event.image_url
             and event.venue_name
             and event.venue_address
             and event.start_date
+            and event.start_date >= now
         )
 
     @staticmethod
