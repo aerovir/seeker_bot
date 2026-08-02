@@ -37,24 +37,43 @@ async def main() -> None:
         cities = list((await session.execute(select(City))).scalars().all())
         city_by_name = {c.name_ru.lower(): c for c in cities}
 
-        # События с адресом
+        # Все события, ожидающие публикации (будущие)
         stmt = select(Event).where(
-            Event.venue_address.isnot(None),
-            Event.venue_address != "",
+            Event.status == "published",
         )
         if args.limit:
             stmt = stmt.limit(args.limit)
         events = list((await session.execute(stmt)).scalars().all())
 
+        # Классификатор для событий без адреса (пересчитать город из текста)
+        from src.aggregator.classifiers.city_classifier import CityClassifier
+        clf = CityClassifier(session)
+        await clf.build_index(cities)
+
         updated = 0
         for event in events:
-            parts = [p.strip() for p in event.venue_address.split(",")]
-            candidate = parts[-1].strip() if parts else ""
-            candidate = candidate.replace("г ", "").replace("г. ", "").strip()
-            if not candidate or len(candidate) < 3:
-                continue
+            # 1. Приоритет: город из адреса места
+            city = None
+            method = "venue_address"
+            if event.venue_address:
+                parts = [p.strip() for p in event.venue_address.split(",")]
+                candidate = parts[-1].strip() if parts else ""
+                candidate = candidate.replace("г ", "").replace("г. ", "").strip()
+                if candidate and len(candidate) >= 3:
+                    city = city_by_name.get(candidate.lower())
 
-            city = city_by_name.get(candidate.lower())
+            # 2. Иначе — классификатор (с default_city источника)
+            if not city and event.source:
+                classified = clf.extract(
+                    event.title, event.description,
+                    default_city_id=event.source.default_city_id,
+                )
+                if classified:
+                    city = next(
+                        (c for c in cities if c.id == classified[0][0]), None
+                    )
+                    method = classified[0][2]
+
             if not city:
                 continue
 
@@ -68,12 +87,12 @@ async def main() -> None:
                 event_id=event.id,
                 city_id=city.id,
                 confidence=1.0,
-                method="venue_address",
+                method=method,
             ))
             updated += 1
 
         await session.commit()
-        print(f"✅ Пересчитано городов: {updated} из {len(events)} событий с адресом")
+        print(f"✅ Пересчитано городов: {updated} из {len(events)} PUBLISHED событий")
 
 
 if __name__ == "__main__":
