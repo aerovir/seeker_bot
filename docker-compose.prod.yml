@@ -61,7 +61,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A celery_app.celery worker -l info -Q high_priority,default,notifications,maintenance --concurrency=4
+    # --pool=solo: асинхронные задачи используют asyncio.run() со своим loop;
+    # prefork-пул разбивает соединения asyncpg по разным loop → "attached to a different loop"
+    command: celery -A celery_app.celery worker -l info -Q high_priority,default,notifications,maintenance --pool=solo
     restart: unless-stopped
     volumes:
       - seeker_bot_logs:/var/log/seeker_bot

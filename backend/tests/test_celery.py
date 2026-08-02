@@ -73,7 +73,7 @@ class TestAggregationTask:
         mock_af = MagicMock(return_value=mock_cm)
         mock_result = PipelineResult(created=[MagicMock(id=1)])
 
-        with patch.object(aggregation, "async_session_factory", mock_af), \
+        with patch.object(aggregation, "celery_session_factory", mock_af), \
              patch("src.aggregator.pipeline.AggregationPipeline") as mock_pipeline_cls:
             mock_pipeline = MagicMock()
             mock_pipeline.execute = AsyncMock(return_value=mock_result)

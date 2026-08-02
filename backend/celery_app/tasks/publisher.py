@@ -7,7 +7,7 @@ Periodically publishes scheduled posts to the Telegram channel.
 import asyncio
 
 from celery_app.celery import celery_app
-from src.db.session import async_session_factory
+from src.db.session import celery_session_factory
 from src.common.logging import logger
 from src.services.publisher_service import PublisherService
 
@@ -26,7 +26,7 @@ async def _publish_scheduled_posts_async():
     from aiogram import Bot
     from src.config import settings
 
-    async with async_session_factory() as session:
+    async with celery_session_factory() as session:
         service = PublisherService(session)
         posts = await service.get_scheduled_posts()
 
@@ -81,7 +81,7 @@ def auto_queue_events():
 
 async def _auto_queue_events_async():
     """Async implementation of auto-queue."""
-    async with async_session_factory() as session:
+    async with celery_session_factory() as session:
         service = PublisherService(session)
         queued = await service.auto_queue_candidates(
             max_per_batch=5,
