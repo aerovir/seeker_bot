@@ -54,3 +54,79 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deploy:
+    # Деплой только из main и только на push (не на PR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend]
+    runs-on: self-hosted
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare /opt/seeker_bot
+        run: sudo install -d -o "$USER" -g "$USER" /opt/seeker_bot
+
+      - name: Sync project to server
+        run: |
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='frontend/node_modules' \
+            --exclude='backend/.venv' \
+            --exclude='*.log' \
+            --exclude='__pycache__' \
+            ./ /opt/seeker_bot/
+
+      # Секреты передаём через env-блок, а не в текст команды — так их
+      # маскирует GitHub и они не попадут в логи workflow.
+      - name: Write .env from secrets
+        working-directory: /opt/seeker_bot
+        run: |
+          cat > .env <<EOF
+          BOT_TOKEN=$BOT_TOKEN
+          ADMIN_IDS=$ADMIN_IDS
+          PUBLISHER_CHANNEL_ID=$PUBLISHER_CHANNEL_ID
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          DATABASE_URL=postgresql+asyncpg://seeker:${POSTGRES_PASSWORD}@postgres:5432/seeker_bot
+          REDIS_URL=redis://redis:6379/0
+          LOG_LEVEL=INFO
+          SENTRY_DSN=$SENTRY_DSN
+          EOF
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_IDS: ${{ secrets.ADMIN_IDS }}
+          PUBLISHER_CHANNEL_ID: ${{ secrets.PUBLISHER_CHANNEL_ID }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+      - name: Docker compose up
+        run: |
+          cd /opt/seeker_bot
+          docker compose -f docker-compose.prod.yml up -d --build
+
+      - name: Run migrations
+        run: |
+          cd /opt/seeker_bot
+          docker compose -f docker-compose.prod.yml exec -T bot alembic upgrade head
+
+      - name: Seed catalogs
+        run: |
+          cd /opt/seeker_bot
+          docker compose -f docker-compose.prod.yml exec -T bot python seed.py || true
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -fsS http://localhost:8000/health || (docker compose -f /opt/seeker_bot/docker-compose.prod.yml logs --tail=100 api; exit 1)
+
+      - name: Show status
+        run: |
+          cd /opt/seeker_bot
+          docker compose -f docker-compose.prod.yml ps
+          echo "--- bot logs ---"
+          docker compose -f docker-compose.prod.yml logs --tail=50 bot

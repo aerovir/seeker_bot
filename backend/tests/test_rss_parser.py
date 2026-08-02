@@ -125,3 +125,51 @@ class TestRSSParser:
         with patch("feedparser.parse", return_value={"bozo": True, "bozo_exception": Exception("Parse failed")}):
             with pytest.raises(ParseError):
                 await parser.parse(b"invalid", None)
+
+    @pytest.mark.asyncio
+    async def test_parse_windows_1251_reencode(self):
+        """RSSParser re-encodes windows-1251 feed when first parse is bozo."""
+        from src.aggregator.parsers.rss_parser import RSSParser
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType
+        from unittest.mock import patch
+
+        source = ContentSource(
+            id=1,
+            name="Test",
+            slug="test",
+            source_type=SourceType.RSS,
+            feed_url="https://example.com/rss",
+        )
+
+        # "выставка" in windows-1251
+        cp1251_bytes = "выставка".encode("cp1251")
+
+        broken = {
+            "bozo": True,
+            "bozo_exception": Exception("invalid encoding"),
+            "entries": [],
+            "feed": {},
+        }
+        good = {
+            "bozo": False,
+            "entries": [
+                {
+                    "title": "Выставка",
+                    "link": "https://example.com/1",
+                    "summary": "Описание",
+                    "published_parsed": None,
+                    "tags": [],
+                }
+            ],
+            "feed": {},
+        }
+
+        parser = RSSParser()
+        with patch("feedparser.parse", side_effect=[broken, good]) as mock_parse:
+            events = await parser.parse(cp1251_bytes, source)
+
+        # Second call used re-encoded UTF-8 bytes
+        assert mock_parse.call_count == 2
+        assert len(events) == 1
+        assert events[0].title == "Выставка"

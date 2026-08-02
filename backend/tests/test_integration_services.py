@@ -54,6 +54,79 @@ class TestEventServiceIntegration:
         assert assignments[0].category_id == 1
 
 
+class TestSourceItemTracking:
+    """SourceItem must be created on event ingest so subsequent runs dedup."""
+
+    @pytest.mark.asyncio
+    async def test_create_event_creates_source_item(self, db_session):
+        """create_from_raw persists a SourceItem for the event."""
+        from src.services.event_service import EventService
+        from src.aggregator.models import EnrichedEvent
+        from src.db.models.source import ContentSource, SourceItem
+        from src.common.constants import SourceType, SourceStatus
+        from sqlalchemy import select
+
+        source = ContentSource(
+            name="Test", slug="test-source", source_type=SourceType.RSS,
+            feed_url="https://example.com/rss", status=SourceStatus.ACTIVE,
+        )
+        db_session.add(source)
+        await db_session.flush()
+
+        enriched = EnrichedEvent(
+            title="Тест SourceItem",
+            description="Описание",
+            content_source_id=source.id,
+            source_slug="test-source",
+            source_item_guid="hash-abc-123",
+            categories=[],
+            cities=[],
+        )
+
+        event = await EventService(db_session).create_from_raw(enriched, source)
+        await db_session.commit()
+
+        result = await db_session.execute(
+            select(SourceItem).where(SourceItem.source_id == source.id)
+        )
+        items = list(result.scalars().all())
+        assert len(items) == 1
+        assert items[0].item_guid == "hash-abc-123"
+        assert items[0].event_id == event.id
+
+    @pytest.mark.asyncio
+    async def test_second_pipeline_run_dedups(self, db_session):
+        """After first ingest, a second run of the same item is filtered out."""
+        from src.services.event_service import EventService
+        from src.aggregator.models import EnrichedEvent, RawEvent
+        from src.aggregator.deduplicator import Deduplicator
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType, SourceStatus
+
+        source = ContentSource(
+            name="Test", slug="test-source", source_type=SourceType.RSS,
+            feed_url="https://example.com/rss", status=SourceStatus.ACTIVE,
+        )
+        db_session.add(source)
+        await db_session.flush()
+
+        enriched = EnrichedEvent(
+            title="Событие", description="Описание",
+            content_source_id=source.id, source_slug="test-source",
+            source_item_guid="same-guid", categories=[], cities=[],
+        )
+        await EventService(db_session).create_from_raw(enriched, source)
+        await db_session.commit()
+
+        # Second run: dedup index now contains the guid
+        dedup = Deduplicator(db_session)
+        await dedup.build_index(source.slug, source.id)
+        new_events = await dedup.filter_new([
+            RawEvent(title="Событие", source_item_guid="same-guid"),
+        ])
+        assert new_events == []
+
+
 class TestFeedServiceIntegration:
     @pytest.mark.asyncio
     async def test_feed_with_preferences(self, db_session, sample_user, sample_cities, sample_categories):

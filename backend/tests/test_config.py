@@ -61,3 +61,20 @@ class TestConfig:
         }, clear=True):
             settings = _reload_settings()
             assert settings.admin_ids == []
+
+    def test_publisher_channel_id_default(self):
+        """PUBLISHER_CHANNEL_ID should default to empty string."""
+        with patch.dict(os.environ, {
+            "BOT_TOKEN": "test:token",
+        }, clear=True):
+            settings = _reload_settings()
+            assert settings.publisher_channel_id == ""
+
+    def test_publisher_channel_id_custom(self):
+        """PUBLISHER_CHANNEL_ID should be read from env."""
+        with patch.dict(os.environ, {
+            "BOT_TOKEN": "test:token",
+            "PUBLISHER_CHANNEL_ID": "@test_channel",
+        }, clear=True):
+            settings = _reload_settings()
+            assert settings.publisher_channel_id == "@test_channel"

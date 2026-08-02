@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     bot_token: str
     admin_ids: list[int] = []
 
+    # Telegram channel for publisher (posting to channel)
+    publisher_channel_id: str = ""
+
     # Database
     database_url: str = "postgresql+asyncpg://seeker:seeker_dev_pass@postgres:5432/seeker_bot"
 

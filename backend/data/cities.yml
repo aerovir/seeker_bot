@@ -97,3 +97,111 @@ cities:
     latitude: 43.1155
     longitude: 131.8855
     aliases: ["владивосток"]
+
+  - slug: rostov-on-don
+    name_ru: "Ростов-на-Дону"
+    name_en: "Rostov-on-Don"
+    name_ru_prepositional: "в Ростове-на-Дону"
+    name_ru_genitive: "Ростова-на-Дону"
+    region: "Ростовская область"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 47.2357
+    longitude: 39.7015
+    aliases: ["ростов", "ростове-на-дону"]
+
+  - slug: samara
+    name_ru: "Самара"
+    name_en: "Samara"
+    name_ru_prepositional: "в Самаре"
+    name_ru_genitive: "Самары"
+    region: "Самарская область"
+    country: "Россия"
+    timezone: "Europe/Samara"
+    latitude: 53.2415
+    longitude: 50.2212
+    aliases: ["самара", "самаре"]
+
+  - slug: chelyabinsk
+    name_ru: "Челябинск"
+    name_en: "Chelyabinsk"
+    name_ru_prepositional: "в Челябинске"
+    name_ru_genitive: "Челябинска"
+    region: "Челябинская область"
+    country: "Россия"
+    timezone: "Asia/Yekaterinburg"
+    latitude: 55.1644
+    longitude: 61.4368
+    aliases: ["челябинск", "челябинске"]
+
+  - slug: ufa
+    name_ru: "Уфа"
+    name_en: "Ufa"
+    name_ru_prepositional: "в Уфе"
+    name_ru_genitive: "Уфы"
+    region: "Башкортостан"
+    country: "Россия"
+    timezone: "Asia/Yekaterinburg"
+    latitude: 54.7388
+    longitude: 55.9721
+    aliases: ["уфа", "уфе"]
+
+  - slug: omsk
+    name_ru: "Омск"
+    name_en: "Omsk"
+    name_ru_prepositional: "в Омске"
+    name_ru_genitive: "Омска"
+    region: "Омская область"
+    country: "Россия"
+    timezone: "Asia/Omsk"
+    latitude: 54.9885
+    longitude: 73.3242
+    aliases: ["омск", "омске"]
+
+  - slug: voronezh
+    name_ru: "Воронеж"
+    name_en: "Voronezh"
+    name_ru_prepositional: "в Воронеже"
+    name_ru_genitive: "Воронежа"
+    region: "Воронежская область"
+    country: "Россия"
+    timezone: "Europe/Moscow"
+    latitude: 51.6615
+    longitude: 39.2003
+    aliases: ["воронеж", "воронеже"]
+
+  - slug: perm
+    name_ru: "Пермь"
+    name_en: "Perm"
+    name_ru_prepositional: "в Перми"
+    name_ru_genitive: "Перми"
+    region: "Пермский край"
+    country: "Россия"
+    timezone: "Asia/Yekaterinburg"
+    latitude: 58.0105
+    longitude: 56.2502
+    aliases: ["пермь", "перми"]
+
+  - slug: krasnoyarsk
+    name_ru: "Красноярск"
+    name_en: "Krasnoyarsk"
+    name_ru_prepositional: "в Красноярске"
+    name_ru_genitive: "Красноярска"
+    region: "Красноярский край"
+    country: "Россия"
+    timezone: "Asia/Krasnoyarsk"
+    latitude: 56.0153
+    longitude: 92.8932
+    aliases: ["красноярск", "красноярске"]
+
+  - slug: volgograd
+    name_ru: "Волгоград"
+    name_en: "Volgograd"
+    name_ru_prepositional: "в Волгограде"
+    name_ru_genitive: "Волгограда"
+    region: "Волгоградская область"
+    country: "Россия"
+    timezone: "Europe/Volgograd"
+    latitude: 48.7071
+    longitude: 44.5169
+    aliases: ["волгоград", "волгограде"]

@@ -165,3 +165,95 @@ frontend/
 
 **Разработка**: `npm run dev` (порт 5173).
 **Сборка**: `npm run build` → `dist/`.
+
+## SSH-доступ к серверу (логи и управление)
+
+При получении доступа от пользователя — заполнить в `~/.ssh/config`:
+
+```
+Host seeker-bot
+    HostName <IP-адрес сервера>
+    User <username>
+    Port 22
+    IdentityFile ~/.ssh/seeker_bot_deploy
+    StrictHostKeyChecking accept-new
+```
+
+### Команды для работы с сервером через Bash
+
+```bash
+# Общий лог (последние 50 строк)
+ssh seeker-bot "tail -50 /var/log/seeker_bot/seeker_bot.log"
+
+# Только ошибки
+ssh seeker-bot "grep -c 'ERROR' /var/log/seeker_bot/seeker_bot.log"
+
+# Docker логи контейнера
+ssh seeker-bot "cd /opt/seeker_bot && docker compose logs --tail=50 bot"
+ssh seeker-bot "cd /opt/seeker_bot && docker compose logs --tail=50 celery-worker"
+
+# Следить за логом в реальном времени
+ssh seeker-bot "tail -f /var/log/seeker_bot/seeker_bot.log"
+
+# Статус всех контейнеров
+ssh seeker-bot "cd /opt/seeker_bot && docker compose ps"
+
+# Перезапуск сервиса
+ssh seeker-bot "cd /opt/seeker_bot && docker compose restart bot"
+
+# Сборка и перезапуск после git pull
+ssh seeker-bot "cd /opt/seeker_bot && git pull && docker compose up -d --build"
+
+# Системные метрики
+ssh seeker-bot "free -h && echo '---' && df -h / | tail -1 && echo '---' && uptime"
+```
+
+### Локальный скрипт-помощник
+
+```bash
+# Справка
+./scripts/logs.sh -h
+
+# Последние 50 строк
+./scripts/logs.sh
+
+# Только ошибки
+./scripts/logs.sh -n 20 -l ERROR
+
+# Следить в реальном времени
+./scripts/logs.sh -f
+
+# Docker логи бота
+./scripts/logs.sh -c bot -n 100
+
+# Статистика
+./scripts/logs.sh -s
+
+# Полный Markdown-отчёт (для Claude)
+./scripts/logs.sh -d
+```
+
+### Настройка сервера (однократно)
+
+```bash
+# Скопировать скрипт и запустить на сервере
+scp scripts/setup-server.sh user@host:/tmp/
+ssh user@host "bash /tmp/setup-server.sh"
+```
+
+### Пути на сервере
+
+| Ресурс | Путь |
+|--------|------|
+| Проект | `/opt/seeker_bot/` |
+| Логи | `/var/log/seeker_bot/seeker_bot.log` |
+| Ротация логов | `/etc/logrotate.d/seeker_bot` |
+| Docker Compose | `/opt/seeker_bot/docker-compose.yml` |
+
+### Переменные окружения для SSH (если не настроен config)
+
+```bash
+export SEEKER_SSH_HOST="<IP-адрес>"
+export SEEKER_SSH_USER="<username>"
+export SEEKER_SSH_KEY="~/.ssh/seeker_bot_deploy"
+```

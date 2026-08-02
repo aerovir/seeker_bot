@@ -104,6 +104,38 @@ class TestCategoryClassifier:
         assert len(result) > 0
         assert result[0][0] == 5  # concerts
 
+    @pytest.mark.asyncio
+    async def test_classify_kids(self):
+        """Text about kids events should be classified as kids."""
+        from src.aggregator.classifiers.category_classifier import CategoryClassifier
+
+        classifier = CategoryClassifier(mock_session())
+        classifier.categories = _mock_categories() + _mock_extra_categories()
+
+        result = classifier.classify(
+            "Детский спектакль для малышей",
+            "Семейный показ для школьников"
+        )
+
+        assert len(result) > 0
+        assert result[0][0] == 8  # kids
+
+    @pytest.mark.asyncio
+    async def test_classify_excursions(self):
+        """Text about excursions should be classified as excursions."""
+        from src.aggregator.classifiers.category_classifier import CategoryClassifier
+
+        classifier = CategoryClassifier(mock_session())
+        classifier.categories = _mock_categories() + _mock_extra_categories()
+
+        result = classifier.classify(
+            "Пешеходная прогулка с гидом",
+            "Обзорный маршрут по центру города"
+        )
+
+        assert len(result) > 0
+        assert result[0][0] == 9  # excursions
+
 
 def mock_session():
     """Create a mock session with pre-loaded categories."""
@@ -152,6 +184,24 @@ def _mock_categories():
         Category(
             id=7, slug="lectures", name_ru="Лекции", name_en="Lectures",
             keywords=["лекци", "семинар", "мастер-класс", "дискусси", "встреч"],
+            is_active=True,
+        ),
+    ]
+
+
+def _mock_extra_categories():
+    """Kids and excursions categories added in the sources expansion."""
+    from src.db.models.category import Category
+
+    return [
+        Category(
+            id=8, slug="kids", name_ru="Детям", name_en="Kids",
+            keywords=["детск", "для детей", "малыш", "школьник", "семейн"],
+            is_active=True,
+        ),
+        Category(
+            id=9, slug="excursions", name_ru="Экскурсии", name_en="Excursions",
+            keywords=["экскурси", "тур", "прогулк", "маршрут", "гид"],
             is_active=True,
         ),
     ]
