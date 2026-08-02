@@ -206,6 +206,9 @@ seeker_bot/
 | TMA (Phase 2-3) | 2 vCPU, 4 GB RAM + S3 | ~$17 |
 | Production (Phase 4-6) | 2 vCPU + managed PG/Redis | ~$60-120 |
 
+Подробное описание развёртывания, переменных окружения и авто-деплоя
+через self-hosted runner — в **[DEPLOY.md](DEPLOY.md)**.
+
 ---
 
 ## Лицензия
