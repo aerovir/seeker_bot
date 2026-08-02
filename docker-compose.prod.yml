@@ -41,7 +41,8 @@ services:
     volumes:
       - seeker_bot_logs:/var/log/seeker_bot
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      # curl отсутствует в python:3.12-slim — проверяем через urllib
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
