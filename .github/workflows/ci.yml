@@ -87,9 +87,14 @@ jobs:
       - name: Write .env from secrets
         working-directory: /opt/seeker_bot
         run: |
+          # pydantic ожидает JSON-массив для ADMIN_IDS — принимаем одиночный ID, список или пусто
+          ADMIN_IDS_JSON="${ADMIN_IDS:-[]}"
+          if [ "$ADMIN_IDS_JSON" != "[]" ] && [ "${ADMIN_IDS_JSON:0:1}" != "[" ]; then
+            ADMIN_IDS_JSON="[$ADMIN_IDS_JSON]"
+          fi
           cat > .env <<EOF
           BOT_TOKEN=$BOT_TOKEN
-          ADMIN_IDS=$ADMIN_IDS
+          ADMIN_IDS=$ADMIN_IDS_JSON
           PUBLISHER_CHANNEL_ID=$PUBLISHER_CHANNEL_ID
           POSTGRES_PASSWORD=$POSTGRES_PASSWORD
           DATABASE_URL=postgresql+asyncpg://seeker:${POSTGRES_PASSWORD}@postgres:5432/seeker_bot
