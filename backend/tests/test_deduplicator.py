@@ -80,6 +80,40 @@ class TestDeduplicator:
         new = await dedup.filter_new([])
         assert new == []
 
+    @pytest.mark.asyncio
+    async def test_duplicate_within_single_run(self):
+        """Two identical items in one run — only first passes.
+
+        RSS-ленты (gorodskoyportal) встречаются с дублями: один и тот же
+        guid/title дважды. Оба не в БД, но второй должен отсечься, иначе
+        INSERT упадёт на UNIQUE constraint events.external_id.
+        """
+        from src.aggregator.deduplicator import Deduplicator
+        from src.aggregator.models import RawEvent
+
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.all.return_value = []  # БД пуста
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        dedup = Deduplicator(mock_session)
+        await dedup.build_index("test-source", 1)
+
+        raw_events = [
+            RawEvent(
+                title="Дубль", content_source_id=1,
+                source_slug="test-source", source_item_guid="same-guid",
+            ),
+            RawEvent(
+                title="Дубль", content_source_id=1,
+                source_slug="test-source", source_item_guid="same-guid",
+            ),
+        ]
+        new = await dedup.filter_new(raw_events)
+
+        assert len(new) == 1
+        assert new[0].source_item_guid == "same-guid"
+
 
 def _make_raw_events(titles: list[str]) -> list:
     """Create RawEvent objects with deterministic guids."""

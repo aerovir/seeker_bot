@@ -45,10 +45,15 @@ class Deduplicator:
         if not events:
             return []
 
-        new_events = [
-            e for e in events
-            if e.source_item_guid not in self._existing_guids
-        ]
+        # Фильтруем и против существующих в БД, и против уже отобранных
+        # в текущем прогоне: в RSS-ленте бывают дубли с одинаковым guid,
+        # иначе второй экземпляр упадёт на UNIQUE constraint external_id.
+        new_events = []
+        for e in events:
+            if e.source_item_guid in self._existing_guids:
+                continue
+            self._existing_guids.add(e.source_item_guid)
+            new_events.append(e)
 
         if len(new_events) < len(events):
             logger.debug(
