@@ -41,7 +41,11 @@ async def cmd_post(message: Message) -> None:
         await message.answer("❌ Укажите числовой ID события и опционально задержку в минутах.")
         return
 
-    from src.db.models.event import Event
+    from src.db.models.event import (
+        Event,
+        EventCategoryAssignment,
+        EventCityAssignment,
+    )
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
 
@@ -49,7 +53,14 @@ async def cmd_post(message: Message) -> None:
         stmt = (
             select(Event)
             .where(Event.id == event_id)
-            .options(selectinload(Event.cities), selectinload(Event.categories))
+            .options(
+                # Вложенные selectinload: ленивый доступ к assignment.city/category
+                # падает с greenlet_spawn в async-контексте
+                selectinload(Event.cities).selectinload(EventCityAssignment.city),
+                selectinload(Event.categories).selectinload(
+                    EventCategoryAssignment.category
+                ),
+            )
         )
         result = await session.execute(stmt)
         event = result.scalar_one_or_none()
@@ -131,14 +142,27 @@ async def cmd_publish_all(message: Message) -> None:
 
             success = 0
             for post in posts:
-                from src.db.models.event import Event
+                from src.db.models.event import (
+                    Event,
+                    EventCategoryAssignment,
+                    EventCityAssignment,
+                )
                 from sqlalchemy import select
                 from sqlalchemy.orm import selectinload
 
                 stmt = (
                     select(Event)
                     .where(Event.id == post.event_id)
-                    .options(selectinload(Event.cities), selectinload(Event.categories))
+                    .options(
+                        # Вложенные selectinload: ленивый доступ к assignment.city/category
+                        # падает с greenlet_spawn в async-контексте
+                        selectinload(Event.cities).selectinload(
+                            EventCityAssignment.city
+                        ),
+                        selectinload(Event.categories).selectinload(
+                            EventCategoryAssignment.category
+                        ),
+                    )
                 )
                 result = await session.execute(stmt)
                 post.event = result.scalar_one_or_none()
@@ -195,7 +219,11 @@ async def callback_queue_event(callback: CallbackQuery) -> None:
 
     event_id = int(callback.data.split(":")[1])
 
-    from src.db.models.event import Event
+    from src.db.models.event import (
+        Event,
+        EventCategoryAssignment,
+        EventCityAssignment,
+    )
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
 
@@ -203,7 +231,14 @@ async def callback_queue_event(callback: CallbackQuery) -> None:
         stmt = (
             select(Event)
             .where(Event.id == event_id)
-            .options(selectinload(Event.cities), selectinload(Event.categories))
+            .options(
+                # Вложенные selectinload: ленивый доступ к assignment.city/category
+                # падает с greenlet_spawn в async-контексте
+                selectinload(Event.cities).selectinload(EventCityAssignment.city),
+                selectinload(Event.categories).selectinload(
+                    EventCategoryAssignment.category
+                ),
+            )
         )
         result = await session.execute(stmt)
         event = result.scalar_one_or_none()
