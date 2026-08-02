@@ -34,8 +34,13 @@ class AggregationPipeline:
         self.session = session
         self.source = source
 
-    async def execute(self) -> PipelineResult:
-        """Execute the full pipeline for the configured source."""
+    async def execute(self, commit: bool = True) -> PipelineResult:
+        """Execute the full pipeline for the configured source.
+
+        Args:
+            commit: Whether to commit the session at the end.
+                Pass False for a dry-run (no writes persisted).
+        """
         logger.info("pipeline_start", source=self.source.slug)
 
         try:
@@ -63,11 +68,13 @@ class AggregationPipeline:
             # 6. Store
             created = await self._store(enriched_events)
 
-            await self.session.commit()
+            if commit:
+                await self.session.commit()
             logger.info(
                 "pipeline_complete",
                 source=self.source.slug,
                 created=len(created),
+                committed=commit,
             )
             return PipelineResult(created=created)
 

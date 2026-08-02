@@ -44,8 +44,8 @@ async def _aggregate_source_async(source_id: int):
 
         # Update source status
         if result.created:
-            source.last_fetched_at = asyncio.get_event_loop().time()  # placeholder
-            # In real code: source.last_fetched_at = datetime.utcnow()
+            from datetime import datetime, timezone
+            source.last_fetched_at = datetime.now(timezone.utc)
             source.consecutive_errors = 0
         elif result.error:
             logger.warning("source_fetch_error", source=source.slug, error=str(result.error))

@@ -14,10 +14,7 @@ from src.db.models.event import Event
 from src.db.models.post_queue import PostQueue
 from src.common.constants import EventStatus, PostStatus
 from src.common.logging import logger
-
-
-# Default channel ID — override via settings or env
-DEFAULT_CHANNEL_ID = ""  # Set via PUBLISHER_CHANNEL_ID env var
+from src.config import settings
 
 
 class PublisherService:
@@ -25,7 +22,7 @@ class PublisherService:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.channel_id = DEFAULT_CHANNEL_ID
+        self.channel_id = settings.publisher_channel_id
 
     async def get_candidates(self, limit: int = 20) -> list[Event]:
         """Get published events that haven't been queued for publication.
@@ -326,6 +323,8 @@ class PublisherService:
             "concert": "🎵",
             "festival": "🎪",
             "lecture": "📚",
+            "kids": "🧒",
+            "excursion": "🗺",
         }
         return emojis.get(event_type, "📌")
 

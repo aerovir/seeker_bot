@@ -108,6 +108,42 @@ class TestPublisherService:
         assert 3500 < diff < 3700  # around 3600 seconds
 
     @pytest.mark.asyncio
+    async def test_schedule_post_uses_settings_channel(self):
+        """schedule_post without explicit channel_id uses settings.publisher_channel_id."""
+        from unittest.mock import patch
+        from src.services.publisher_service import PublisherService
+
+        mock_session = AsyncMock()
+        mock_session.flush = AsyncMock()
+
+        event = _create_mock_event(title="Test", event_type="test")
+
+        with patch("src.services.publisher_service.settings") as mock_settings:
+            mock_settings.publisher_channel_id = "@default_channel"
+            service = PublisherService(mock_session)
+            post = await service.schedule_post(event, delay_minutes=60)
+
+        assert post.channel_id == "@default_channel"
+
+    @pytest.mark.asyncio
+    async def test_schedule_post_explicit_channel_overrides(self):
+        """Explicit channel_id overrides settings default."""
+        from unittest.mock import patch
+        from src.services.publisher_service import PublisherService
+
+        mock_session = AsyncMock()
+        mock_session.flush = AsyncMock()
+
+        event = _create_mock_event(title="Test", event_type="test")
+
+        with patch("src.services.publisher_service.settings") as mock_settings:
+            mock_settings.publisher_channel_id = "@default_channel"
+            service = PublisherService(mock_session)
+            post = await service.schedule_post(event, delay_minutes=60, channel_id="@explicit")
+
+        assert post.channel_id == "@explicit"
+
+    @pytest.mark.asyncio
     async def test_get_scheduled_posts(self):
         """get_scheduled_posts returns posts due for publishing."""
         from src.services.publisher_service import PublisherService

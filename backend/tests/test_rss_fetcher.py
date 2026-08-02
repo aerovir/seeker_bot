@@ -48,6 +48,26 @@ class TestRSSFetcher:
         assert result == b"<rss><item>test</item></rss>"
 
     @pytest.mark.asyncio
+    async def test_fetch_rejects_html_body(self, mock_source):
+        """RSSFetcher raises FetchError when body is HTML despite HTTP 200."""
+        from src.aggregator.fetchers.rss_fetcher import RSSFetcher
+
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.read.return_value = b"<!DOCTYPE html><html><body>SPA shell</body></html>"
+
+        mock_get = MagicMock(return_value=mock_response)
+
+        mock_session = AsyncMock()
+        mock_session.__aenter__.return_value.get = mock_get
+
+        fetcher = RSSFetcher()
+        with patch("aiohttp.ClientSession", return_value=mock_session):
+            with pytest.raises(FetchError, match="not a feed"):
+                await fetcher.fetch(mock_source)
+
+    @pytest.mark.asyncio
     async def test_fetch_http_error(self, mock_source):
         """RSSFetcher raises FetchError on non-200 response."""
         from src.aggregator.fetchers.rss_fetcher import RSSFetcher

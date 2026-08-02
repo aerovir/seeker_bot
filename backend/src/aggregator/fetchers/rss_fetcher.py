@@ -49,6 +49,10 @@ class RSSFetcher(BaseFetcher):
                             f"HTTP {response.status} for {source.feed_url}"
                         )
                     data = await response.read()
+                    if not self._looks_like_feed(data):
+                        raise FetchError(
+                            f"Response for {source.feed_url} is not a feed (HTML?)"
+                        )
                     logger.debug(
                         "rss_fetch_success",
                         url=source.feed_url,
@@ -62,3 +66,15 @@ class RSSFetcher(BaseFetcher):
         except aiohttp.ClientError as e:
             logger.warning("rss_fetch_error", url=source.feed_url, error=str(e))
             raise FetchError(f"Network error fetching {source.feed_url}: {e}")
+
+    @staticmethod
+    def _looks_like_feed(data: bytes) -> bool:
+        """Heuristic check that the body looks like XML feed, not HTML.
+
+        Some sites return HTTP 200 with a JS SPA shell or 404 page —
+        these must be rejected so they don't silently pollute the pipeline.
+        """
+        stripped = data.lstrip()
+        return stripped.startswith(
+            (b"<?xml", b"<rss", b"<feed", b"<rdf", b"<RDF")
+        )

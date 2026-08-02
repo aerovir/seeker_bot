@@ -20,6 +20,8 @@ CATEGORY_TO_EVENT_TYPE = {
     "concerts": "concert",
     "festivals": "festival",
     "lectures": "lecture",
+    "kids": "kids",
+    "excursions": "excursion",
     "other": "other",
 }
 
@@ -81,6 +83,17 @@ class EventService:
         )
         self.session.add(event)
         await self.session.flush()
+
+        # Track the source item so subsequent pipeline runs can dedup on it
+        from src.db.models.source import SourceItem
+
+        source_item = SourceItem(
+            source_id=source.id,
+            item_guid=enriched_event.source_item_guid,
+            item_hash=enriched_event.source_item_guid,
+            event_id=event.id,
+        )
+        self.session.add(source_item)
 
         # Create category assignments
         for cat_id, confidence, method in enriched_event.categories:

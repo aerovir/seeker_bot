@@ -32,6 +32,16 @@ class RSSParser(BaseParser):
         """
         feed = feedparser.parse(raw_data)
 
+        # Legacy feeds (windows-1251) sometimes fail encoding auto-detection.
+        # Re-encode to UTF-8 and retry once before giving up.
+        if feed.get("bozo") and feed.get("bozo_exception"):
+            try:
+                text = raw_data.decode("cp1251", errors="replace")
+                utf8_data = text.encode("utf-8")
+                feed = feedparser.parse(utf8_data)
+            except Exception:
+                pass
+
         if feed.get("bozo") and feed.get("bozo_exception"):
             error = feed["bozo_exception"]
             logger.warning("rss_parse_error", error=str(error))

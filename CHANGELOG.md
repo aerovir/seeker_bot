@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [1.1.0] — 2026-08-02
+
+### Added
+- ✨ 9 новых городов: Ростов-на-Дону, Самара, Челябинск, Уфа, Омск, Воронеж, Пермь, Красноярск, Волгоград
+- ✨ 2 новые категории: «Детям» (🧒) и «Экскурсии» (🗺) — с классификацией и эмодзи в публикациях
+- ✨ `SourceItem`-трекинг в `EventService.create_from_raw` — источник теперь запоминается для дедупликации повторных прогонов
+- ✨ `RSSFetcher._looks_like_feed` — отбраковка HTML-ответов (SPA-обёртки, 404-страницы) при HTTP 200
+- ✨ `RSSParser` — повторная попытка парсинга с перекодировкой windows-1251 → UTF-8
+- ✨ Dry-run пайплайна: `pipeline.execute(commit=False)` + корректный rollback в `run_parser.py --dry-run`
+- ✨ `PUBLISHER_CHANNEL_ID` из настроек — канал для публикаций больше не хардкод
+
+### Changed
+- 🔄 `sources.yml` переработан: проверенные живые ленты, городские афиши `gorodskoyportal.ru` (8+ городов) + культурные новости (Lenta, Газета.ru, Сноб, Jazz.ru, Mos.ru); прежние мёртвые RSS (KudaGo, музеи) убраны
+- 🔄 `last_fetched_at` теперь настоящий `datetime.now(timezone.utc)` вместо placeholder
+- 🔄 Dockerfile: CMD запускает uvicorn `src.api.app:app` вместо `python -m src.main`
+- 🧪 Новые тесты: каталоги данных, dry-run/commit пайплайна, HTML-rejection, cp1251 re-encode, SourceItem-дедупликация, канал публикации, новые категории (всего 148, все проходят)
+
 ## [1.0.0] — 2026-07-27
 
 ### Added

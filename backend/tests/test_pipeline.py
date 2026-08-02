@@ -84,6 +84,59 @@ class TestAggregationPipeline:
         assert result.created[0].id == 1
 
     @pytest.mark.asyncio
+    async def test_pipeline_commits_by_default(self):
+        """Pipeline commits the session when commit=True (default)."""
+        from src.aggregator.pipeline import AggregationPipeline
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType, SourceStatus
+        from src.aggregator.models import RawEvent
+
+        source = ContentSource(
+            id=1, name="Test", slug="test", source_type=SourceType.RSS,
+            feed_url="https://example.com/rss", status=SourceStatus.ACTIVE,
+        )
+        mock_session = AsyncMock()
+
+        pipeline = AggregationPipeline(mock_session, source)
+        pipeline._fetch = AsyncMock(return_value=b"<rss/>")
+        pipeline._parse = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._classify = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._dedup = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._enrich = AsyncMock(return_value=[MagicMock(title="E", source_item_guid="g")])
+        pipeline._store = AsyncMock(return_value=[MagicMock(id=1)])
+
+        await pipeline.execute()
+
+        mock_session.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_pipeline_skips_commit_when_commit_false(self):
+        """Pipeline does not commit when commit=False (dry-run)."""
+        from src.aggregator.pipeline import AggregationPipeline
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType, SourceStatus
+        from src.aggregator.models import RawEvent
+
+        source = ContentSource(
+            id=1, name="Test", slug="test", source_type=SourceType.RSS,
+            feed_url="https://example.com/rss", status=SourceStatus.ACTIVE,
+        )
+        mock_session = AsyncMock()
+
+        pipeline = AggregationPipeline(mock_session, source)
+        pipeline._fetch = AsyncMock(return_value=b"<rss/>")
+        pipeline._parse = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._classify = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._dedup = AsyncMock(return_value=[RawEvent(title="E", source_item_guid="g")])
+        pipeline._enrich = AsyncMock(return_value=[MagicMock(title="E", source_item_guid="g")])
+        pipeline._store = AsyncMock(return_value=[MagicMock(id=1)])
+
+        result = await pipeline.execute(commit=False)
+
+        mock_session.commit.assert_not_awaited()
+        assert len(result.created) == 1
+
+    @pytest.mark.asyncio
     async def test_pipeline_skip_empty_fetch(self):
         """Pipeline skips if fetch returns no data."""
         from src.aggregator.pipeline import AggregationPipeline

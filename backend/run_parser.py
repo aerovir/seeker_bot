@@ -66,7 +66,8 @@ async def run_source(session, source, dry_run: bool = False) -> dict:
 
     pipeline = AggregationPipeline(session, source)
     start = time.time()
-    result = await pipeline.execute()
+    # commit=False for dry-run: pipeline leaves changes uncommitted, we roll back
+    result = await pipeline.execute(commit=not dry_run)
     elapsed = time.time() - start
 
     if result.skipped:
@@ -80,8 +81,6 @@ async def run_source(session, source, dry_run: bool = False) -> dict:
     if dry_run:
         await session.rollback()
         logger.info("pipeline_dry_run (rolled back)", source=source.slug, events=len(result.created))
-    else:
-        await session.commit()
 
     return {
         "slug": source.slug,
