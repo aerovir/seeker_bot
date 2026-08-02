@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [1.4.0] — 2026-08-02
+
+### Added — rich-публикации в канале
+- 📷 **Фотография** события — из RSS (links enclosure) для gorodskoyportal и Lenta
+- 📍 **Место и адрес** — скрейпинг Schema.org с HTML-страницы события (gorodskoyportal, windows-1251), параллельно с ограничением
+- 🏷 **#хэштеги** города и категории (кириллица): `#москва #концерты`
+- 🎨 Красивое оформление: место жирным, город, дата, категории с эмодзи
+
+### Changed
+- 🔄 `RSSParser._extract_image` — извлечение фото из links/media_content/media_thumbnail
+- 🔄 `Enricher._enrich_venues` — параллельный fail-safe скрейпинг места (Semaphore 5)
+- 🔄 `build_channel_message` — новый формат с хэштегами
+- 🗄 `scripts/backfill_event_details.py` — обратная миграция существующих событий (206 фото, 4 места; место в Schema.org есть не у всех афиш gorodskoyportal)
+
+### Verified
+- ✅ Публикация «Комикессы» (StandUp Store Moscow) — фото + место + адрес + хэштеги
+- ✅ 158 тестов проходят
+
 ## [1.3.0] — 2026-08-02
 
 ### Added
