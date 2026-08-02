@@ -202,6 +202,8 @@ ssh seeker-bot "cd /opt/seeker_bot && docker compose ps"
 ssh seeker-bot "cd /opt/seeker_bot && docker compose restart bot"
 
 # Сборка и перезапуск после git pull
+# (основной деплой — автоматический через GitHub Actions self-hosted runner,
+#  эта команда — fallback для ручного перезапуска)
 ssh seeker-bot "cd /opt/seeker_bot && git pull && docker compose up -d --build"
 
 # Системные метрики

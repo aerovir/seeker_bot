@@ -150,43 +150,51 @@ docker compose exec bot alembic history
 ```yaml
 # На каждый push/PR:
 # 1. Установка Python 3.12 + зависимостей
-# 2. Запуск 128 тестов
+# 2. Запуск тестов (pytest)
 # 3. Установка Node.js 20 + зависимостей
 # 4. TypeScript typecheck
 # 5. Vite build
+# 6. Деплой на VPS (только push в main, self-hosted runner)
 ```
 
-**Для деплоя добавить:**
-```yaml
-deploy:
-  needs: [backend, frontend]
-  runs-on: ubuntu-latest
-  steps:
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@v1
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        script: |
-          cd /opt/seeker_bot
-          git pull origin main
-          docker compose down
-          docker compose up -d --build
-          docker compose exec -T bot alembic upgrade head
-```
+### Авто-деплой через self-hosted runner
 
-**Необходимые секреты для деплоя:**
-- `VPS_HOST` — IP-адрес сервера
-- `VPS_USER` — пользователь SSH
-- `VPS_SSH_KEY` — приватный SSH-ключ
+Воркфлоу содержит job `deploy`, который срабатывает **только на push в `main`**
+(после зелёного CI, `needs: [backend, frontend]`) и выполняется **прямо на
+сервере** через self-hosted GitHub Actions runner (`runs-on: self-hosted`).
+
+**Почему без SSH:** runner установлен на целевом VPS и привязан к репозиторию
+(`Settings → Actions → Runners`). Job выполняется локально на сервере, поэтому
+SSH-ключи для деплоя не нужны.
+
+**Что делает deploy job:**
+1. `rsync` кода в `/opt/seeker_bot` (без `.git`, `node_modules`, `.venv`)
+2. Генерирует `.env` из GitHub secrets (см. ниже)
+3. `docker compose -f docker-compose.prod.yml up -d --build`
+4. `alembic upgrade head` (миграции)
+5. `python seed.py` (каталоги городов/категорий/источников)
+6. Healthcheck API (`/health`) + отчёт о контейнерах
+
+**Необходимые секреты (Settings → Secrets and variables → Actions):**
 - `BOT_TOKEN` — токен бота
-- `DATABASE_URL` — строка подключения к БД
-- `REDIS_URL` — строка подключения к Redis
-- `ADMIN_IDS` — ID администраторов
-- `PUBLISHER_CHANNEL_ID` — ID канала
+- `ADMIN_IDS` — ID администраторов (один ID или JSON-массив `[1,2]`; нормализуется в workflow)
+- `PUBLISHER_CHANNEL_ID` — ID канала для публикаций
+- `POSTGRES_PASSWORD` — пароль PostgreSQL (используется и в `.env`, и в БД-URL)
 - `SENTRY_DSN` — опционально
-- `YANDEX_AFISHA_API_KEY` — опционально
+
+> `DATABASE_URL` и `REDIS_URL` собираются в workflow из `POSTGRES_PASSWORD` —
+> задавать их секретами не нужно.
+
+**Настройка runner на сервере (однократно):**
+```bash
+# Зарегистрировать runner для репозитория:
+#   GitHub → Settings → Actions → Runners → New self-hosted runner
+#   (по инструкции: ./config.sh --url https://github.com/aerovir/seeker_bot --token <REG_TOKEN>)
+./run.sh
+# Желательно установить как systemd-сервис:
+./svc.sh install
+sudo systemctl enable --now actions.runner.aerovir-seeker_bot.*
+```
 
 ---
 
@@ -294,15 +302,17 @@ ssh user@host "bash /tmp/setup-server.sh"
 ## 8. Быстрый чек-лист деплоя
 
 - [ ] Куплен VPS (минимум 2 vCPU, 4 GB RAM)
-- [ ] Настроен SSH-доступ
 - [ ] Установлены Docker + Docker Compose
 - [ ] Создан бот через @BotFather
 - [ ] Создан Telegram-канал (для публициста)
-- [ ] Настроен `.env` с реальными значениями
-- [ ] Nginx настроен как reverse proxy (для API + статики TMA)
-- [ ] SSL-сертификат (Let's Encrypt / certbot)
-- [ ] Выполнены миграции (`alembic upgrade head`)
+- [ ] Зарегистрирован self-hosted runner для репозитория (Settings → Actions → Runners)
+- [ ] Runner установлен как systemd-сервис (переживает перезагрузку)
+- [ ] В GitHub Secrets заданы: `BOT_TOKEN`, `ADMIN_IDS`, `PUBLISHER_CHANNEL_ID`, `POSTGRES_PASSWORD`
+- [ ] Пуш в `main` → CI зелёный → deploy job поднимает контейнеры
+- [ ] API отвечает на `/health`
 - [ ] Бот запущен, отвечает на `/start`
+- [ ] Nginx настроен как reverse proxy (для API + статики TMA) — **обязательно для TMA, нужен HTTPS**
+- [ ] SSL-сертификат (Let's Encrypt / certbot)
 - [ ] TMA открывается в Telegram
 - [ ] Настроен мониторинг (Sentry, логи)
 - [ ] CI проходит успешно

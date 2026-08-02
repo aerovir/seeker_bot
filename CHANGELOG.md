@@ -12,6 +12,11 @@
 - 🐛 **Дубли в RSS-лентах** (gorodskoyportal) — второй экземпляр падал на `IntegrityError ... ix_events_external_id`. Фикс: `Deduplicator.filter_new` отсекает дубли в рамках одного прогона
 - 🐛 **Healthcheck api** — `curl` отсутствует в `python:3.12-slim`, контейнер висел в `health: starting`. Фикс: проверка через `urllib`
 
+### Docs
+- 📝 **DEPLOY.md** — раздел «CI/CD» переписан: авто-деплой через self-hosted runner (без SSH), актуальные секреты, настройка runner; обновлён чек-лист деплоя
+- 📝 **README.md** — ссылка на DEPLOY.md в разделе «Инфраструктура»
+- 📝 **CLAUDE.md** — пометка, что деплой автоматический, SSH-команда — fallback
+
 ## [1.1.0] — 2026-08-02
 
 ### Added
