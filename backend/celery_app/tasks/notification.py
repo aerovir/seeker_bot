@@ -7,7 +7,7 @@ Sends daily and weekly digests to users.
 import asyncio
 
 from celery_app.celery import celery_app
-from src.db.session import async_session_factory
+from src.db.session import celery_session_factory
 from src.db.models.user import User, NotificationFrequency
 from src.common.logging import logger
 from sqlalchemy import select
@@ -37,7 +37,7 @@ async def _send_digests_async(frequency: NotificationFrequency):
     from aiogram import Bot
     from src.services.notification_service import NotificationService
 
-    async with async_session_factory() as session:
+    async with celery_session_factory() as session:
         # Get all users with this frequency
         stmt = select(User).where(
             User.is_active == True,

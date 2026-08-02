@@ -7,7 +7,7 @@ Bridges sync Celery workers with async pipeline code using asyncio.run().
 import asyncio
 
 from celery_app.celery import celery_app
-from src.db.session import async_session_factory
+from src.db.session import celery_session_factory
 from src.db.models.source import ContentSource
 from src.common.constants import SourceStatus
 from src.common.exceptions import FetchError
@@ -27,7 +27,7 @@ def aggregate_source(self, source_id: int):
 
 async def _aggregate_source_async(source_id: int):
     """Async implementation of source aggregation."""
-    async with async_session_factory() as session:
+    async with celery_session_factory() as session:
         source = await session.get(ContentSource, source_id)
         if not source:
             logger.warning("source_not_found", source_id=source_id)
@@ -58,7 +58,7 @@ async def _aggregate_source_async(source_id: int):
 
 async def _get_sources_by_priority(min_priority: int) -> list[ContentSource]:
     """Get active sources with at least the given priority."""
-    async with async_session_factory() as session:
+    async with celery_session_factory() as session:
         stmt = (
             select(ContentSource)
             .where(
