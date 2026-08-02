@@ -173,3 +173,78 @@ class TestRSSParser:
         assert mock_parse.call_count == 2
         assert len(events) == 1
         assert events[0].title == "Выставка"
+
+    @pytest.mark.asyncio
+    async def test_parse_relative_link_resolves_to_absolute(self):
+        """Относительная ссылка (gorodskoyportal) склеивается с доменом источника.
+
+        Telegram требует абсолютный URL для inline-кнопок, иначе публикация
+        падает: 'inline keyboard button URL ... is invalid: URL host is empty'.
+        """
+        from src.aggregator.parsers.rss_parser import RSSParser
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType
+        from unittest.mock import patch
+
+        source = ContentSource(
+            id=1,
+            name="Test",
+            slug="test",
+            source_type=SourceType.RSS,
+            feed_url="https://gorodskoyportal.ru/rostov/afisha/rss/",
+        )
+
+        mock_feed = {
+            "entries": [
+                {
+                    "title": "Выставка",
+                    "link": "/rostov/afisha/poster/1053737/",
+                    "summary": "Описание",
+                    "published_parsed": None,
+                    "tags": [],
+                }
+            ],
+            "feed": {},
+        }
+
+        parser = RSSParser()
+        with patch("feedparser.parse", return_value=mock_feed):
+            events = await parser.parse(b"dummy", source)
+
+        assert len(events) == 1
+        assert events[0].url == "https://gorodskoyportal.ru/rostov/afisha/poster/1053737/"
+
+    @pytest.mark.asyncio
+    async def test_parse_absolute_link_unchanged(self):
+        """Абсолютная ссылка не меняется при нормализации."""
+        from src.aggregator.parsers.rss_parser import RSSParser
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType
+        from unittest.mock import patch
+
+        source = ContentSource(
+            id=1,
+            name="Test",
+            slug="test",
+            source_type=SourceType.RSS,
+            feed_url="https://example.com/rss",
+        )
+
+        mock_feed = {
+            "entries": [
+                {
+                    "title": "Выставка",
+                    "link": "https://example.com/event/1",
+                    "summary": "Описание",
+                    "published_parsed": None,
+                    "tags": [],
+                }
+            ],
+            "feed": {},
+        }
+
+        parser = RSSParser()
+        with patch("feedparser.parse", return_value=mock_feed):
+            events = await parser.parse(b"dummy", source)
+
+        assert events[0].url == "https://example.com/event/1"

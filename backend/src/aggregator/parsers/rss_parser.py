@@ -63,6 +63,14 @@ class RSSParser(BaseParser):
         """Convert a feedparser entry dict to RawEvent."""
         title = entry.get("title") or ""
         link = entry.get("link") or ""
+        # Некоторые источники (gorodskoyportal) отдают относительные ссылки
+        # (/rostov/afisha/poster/123/) — Telegram требует абсолютный URL для
+        # inline-кнопок. Склеиваем с доменом из feed_url источника.
+        if link.startswith("/") and source is not None and source.feed_url:
+            from urllib.parse import urlsplit, urlunsplit
+
+            parts = urlsplit(source.feed_url)
+            link = urlunsplit((parts.scheme, parts.netloc, link, "", ""))
         summary = entry.get("summary") or entry.get("description") or ""
 
         # Build a stable GUID
