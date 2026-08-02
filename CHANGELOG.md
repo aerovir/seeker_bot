@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [1.2.0] — 2026-08-02
+
+### Added
+- 🚀 **Авто-деплой** на VPS через self-hosted GitHub Actions runner (job `deploy` в CI, только push в `main`)
+- 🔧 Деплой: rsync кода в `/opt/seeker_bot`, генерация `.env` из GitHub secrets, `docker compose -f docker-compose.prod.yml up -d --build`, миграции, seed, healthcheck
+
+### Fixed (найдено при реальном деплое)
+- 🐛 **Celery worker падал с KeyError** (`celery_app.tasks.publisher.publish_scheduled_posts`) — модули задач не импортировались при старте. Фикс: импорт всех `celery_app.tasks.*` в `celery_app/__init__.py`
+- 🐛 **`ADMIN_IDS` из секрета** — pydantic падал (`Input should be a valid list`), если секрет был одиночным числом. Фикс: нормализация в JSON-массив в workflow
+- 🐛 **Дубли в RSS-лентах** (gorodskoyportal) — второй экземпляр падал на `IntegrityError ... ix_events_external_id`. Фикс: `Deduplicator.filter_new` отсекает дубли в рамках одного прогона
+- 🐛 **Healthcheck api** — `curl` отсутствует в `python:3.12-slim`, контейнер висел в `health: starting`. Фикс: проверка через `urllib`
+
 ## [1.1.0] — 2026-08-02
 
 ### Added
