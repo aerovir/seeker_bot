@@ -39,7 +39,11 @@ async def _publish_scheduled_posts_async():
             success_count = 0
             for post in posts:
                 # Reload event for this post (since session may be different)
-                from src.db.models.event import Event
+                from src.db.models.event import (
+                    Event,
+                    EventCategoryAssignment,
+                    EventCityAssignment,
+                )
                 from sqlalchemy import select
                 from sqlalchemy.orm import selectinload
 
@@ -47,8 +51,14 @@ async def _publish_scheduled_posts_async():
                     select(Event)
                     .where(Event.id == post.event_id)
                     .options(
-                        selectinload(Event.cities),
-                        selectinload(Event.categories),
+                        # Вложенные selectinload: assignment.city/category —
+                        # ленивый доступ к ним падает с greenlet_spawn
+                        selectinload(Event.cities).selectinload(
+                            EventCityAssignment.city
+                        ),
+                        selectinload(Event.categories).selectinload(
+                            EventCategoryAssignment.category
+                        ),
                     )
                 )
                 result = await session.execute(stmt)
