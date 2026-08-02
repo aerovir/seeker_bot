@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.db.models.event import Event
 from src.db.models.post_queue import PostQueue
@@ -47,6 +48,9 @@ class PublisherService:
                 Event.status == EventStatus.PUBLISHED,
                 Event.id.notin_(queued_subq),
             )
+            # event.source — lazy relationship, нужен для валидации
+            # (feed_url); без eager-load в async падает greenlet_spawn
+            .options(selectinload(Event.source))
             .order_by(Event.is_featured.desc(), Event.created_at.desc())
             .limit(limit)
         )
