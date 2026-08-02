@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## [1.5.0] — 2026-08-02
+
+### Added — валидация событий перед публикацией
+- 🛡 **Публикуем только «живые» проверенные мероприятия**:
+  - Полное событие (описание + фото + место/адрес + дата) → в очередь сразу
+  - Неполное → `validate_event`: сверка с RSS-источником (external_id guid), проверка живости страницы
+  - Найдено → обогащаем (описание из RSS, фото, место со Schema.org) → публикуем
+  - Не найдено → статус `REJECTED`, не публикуется
+- 📅 **Фильтр будущих дат**: новостные ленты (Lenta, Газета) дают прошедшие даты — это не афиши, они исключены из публикации
+- 📝 **Описание в постах**: `description` → `short_description` (HTML→текст) + fallback в `build_channel_message`
+
+### Changed
+- 🔄 Новый `src/aggregator/validators/event_validator.py` (RSS-сверка, `html_to_text`)
+- 🔄 `publisher_service`: `_is_complete`, валидация в `auto_queue_candidates`, eager-load `Event.source`
+- 🔄 `EnrichedEvent.from_raw`: перенос description → short_description
+
+### Verified
+- ✅ Автопубликация «Комикессы» (StandUp Store Moscow) — описание, место, адрес, хэштеги
+- ✅ 222 события с прошедшей датой → REJECTED, 187 будущих → кандидаты
+- ✅ 166 тестов проходят
+
 ## [1.4.0] — 2026-08-02
 
 ### Added — rich-публикации в канале
