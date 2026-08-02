@@ -6,7 +6,7 @@ Tests: FeedService, UserService, PublisherService, EventService.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 
@@ -183,10 +183,12 @@ class TestPublisherServiceIntegration:
         from src.common.constants import EventStatus
 
         event_published = Event(
-            title="Published", event_type="concert", status=EventStatus.PUBLISHED
+            title="Published", event_type="concert", status=EventStatus.PUBLISHED,
+            start_date=datetime.now(timezone.utc) + timedelta(days=1),
         )
         event_pending = Event(
-            title="Pending", event_type="concert", status=EventStatus.PENDING
+            title="Pending", event_type="concert", status=EventStatus.PENDING,
+            start_date=datetime.now(timezone.utc) + timedelta(days=1),
         )
         db_session.add(event_published)
         db_session.add(event_pending)
