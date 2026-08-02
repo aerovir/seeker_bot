@@ -69,6 +69,19 @@ class TestPublisherService:
         assert "🎨" in text
         assert "500" in text
         assert markup is not None
+        # Место жирным + хэштеги города и категории
+        assert "<b>Третьяковская галерея</b>" in text
+        assert "#москва" in text
+        assert "#выставки" in text
+
+    def test_to_hashtag(self):
+        """_to_hashtag нормализует строку в кириллический хэштег."""
+        from src.services.publisher_service import PublisherService
+
+        assert PublisherService._to_hashtag("Москва") == "москва"
+        assert PublisherService._to_hashtag("Нижний Новгород") == "нижний_новгород"
+        assert PublisherService._to_hashtag("Концерты") == "концерты"
+        assert PublisherService._to_hashtag("") == ""
 
     def test_build_channel_message_minimal(self):
         """build_channel_message handles minimal event data."""

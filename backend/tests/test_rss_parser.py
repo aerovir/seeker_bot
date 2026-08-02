@@ -248,3 +248,69 @@ class TestRSSParser:
             events = await parser.parse(b"dummy", source)
 
         assert events[0].url == "https://example.com/event/1"
+
+    @pytest.mark.asyncio
+    async def test_parse_extracts_image_from_enclosure(self):
+        """image_url извлекается из links enclosure (gorodskoyportal/Lenta)."""
+        from src.aggregator.parsers.rss_parser import RSSParser
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType
+
+        source = ContentSource(
+            id=1, name="Test", slug="test",
+            source_type=SourceType.RSS, feed_url="https://example.com/rss",
+        )
+
+        mock_feed = {
+            "entries": [
+                {
+                    "title": "Выставка",
+                    "link": "https://example.com/event/1",
+                    "summary": "Описание",
+                    "published_parsed": None,
+                    "tags": [],
+                    "links": [
+                        {"rel": "enclosure", "type": "image/jpeg",
+                         "href": "http://gorodskoyportal.ru/moskva/pictures/posters/1/1_big.jpg"},
+                    ],
+                }
+            ],
+            "feed": {},
+        }
+
+        parser = RSSParser()
+        with patch("feedparser.parse", return_value=mock_feed):
+            events = await parser.parse(b"dummy", source)
+
+        assert events[0].image_url == "http://gorodskoyportal.ru/moskva/pictures/posters/1/1_big.jpg"
+
+    @pytest.mark.asyncio
+    async def test_parse_no_image_returns_empty(self):
+        """Без картинки image_url пустой."""
+        from src.aggregator.parsers.rss_parser import RSSParser
+        from src.db.models.source import ContentSource
+        from src.common.constants import SourceType
+
+        source = ContentSource(
+            id=1, name="Test", slug="test",
+            source_type=SourceType.RSS, feed_url="https://example.com/rss",
+        )
+
+        mock_feed = {
+            "entries": [
+                {
+                    "title": "Выставка",
+                    "link": "https://example.com/event/1",
+                    "summary": "Описание",
+                    "published_parsed": None,
+                    "tags": [],
+                }
+            ],
+            "feed": {},
+        }
+
+        parser = RSSParser()
+        with patch("feedparser.parse", return_value=mock_feed):
+            events = await parser.parse(b"dummy", source)
+
+        assert events[0].image_url == ""

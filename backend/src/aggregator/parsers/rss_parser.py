@@ -105,6 +105,33 @@ class RSSParser(BaseParser):
             source_item_guid=item_hash,
             source_url=source_url,
             url=link,
+            image_url=self._extract_image(entry),
             start_date=start_date,
             categories=categories,
         )
+
+    @staticmethod
+    def _extract_image(entry: dict) -> str:
+        """Extract an image URL from an RSS entry.
+
+        Приоритет: links enclosure (image/*) → media_content → media_thumbnail.
+        gorodskoyportal и Lenta отдают фото через links rel=enclosure.
+        """
+        # 1. links / enclosure
+        for link in entry.get("links", []):
+            rel = link.get("rel", "")
+            link_type = link.get("type", "") or ""
+            href = link.get("href", "")
+            if rel == "enclosure" and link_type.startswith("image/") and href:
+                return href
+        # 2. media_content
+        for mc in entry.get("media_content", []):
+            url = mc.get("url", "")
+            if url:
+                return url
+        # 3. media_thumbnail
+        for mt in entry.get("media_thumbnail", []):
+            url = mt.get("url", "")
+            if url:
+                return url
+        return ""
