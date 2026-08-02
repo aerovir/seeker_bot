@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
 
 from src.db.session import async_session_factory
 from src.db.models.city import City
@@ -40,7 +41,7 @@ async def main() -> None:
         # Все события, ожидающие публикации (будущие)
         stmt = select(Event).where(
             Event.status == "published",
-        )
+        ).options(selectinload(Event.source))
         if args.limit:
             stmt = stmt.limit(args.limit)
         events = list((await session.execute(stmt)).scalars().all())
