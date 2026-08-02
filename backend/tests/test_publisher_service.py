@@ -272,6 +272,45 @@ class TestPublisherService:
         mock_sched.assert_not_awaited()
         assert event.status == "rejected"
 
+    @pytest.mark.asyncio
+    async def test_apply_venue_city_sets_city_from_address(self):
+        """_apply_venue_city ставит город из адреса места."""
+        from src.services.publisher_service import PublisherService
+        from src.db.models.city import City
+
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = City(
+            id=1, slug="moscow", name_ru="Москва", name_en="Moscow",
+            name_ru_prepositional="в Москве", name_ru_genitive="Москвы",
+            aliases=[], region="Москва", is_active=True,
+        )
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        service = PublisherService(mock_session)
+        event = _create_mock_event(
+            venue_address="ул. Петровка, 21, Москва",
+            cities=[],
+        )
+
+        await service._apply_venue_city(event)
+
+        assert len(event.cities) == 1
+        assert event.cities[0].city_id == 1
+        assert event.cities[0].method == "venue_address"
+
+    @pytest.mark.asyncio
+    async def test_apply_venue_city_no_address(self):
+        """Без адреса город не меняется."""
+        from src.services.publisher_service import PublisherService
+
+        service = PublisherService(AsyncMock())
+        event = _create_mock_event(venue_address=None, cities=[])
+
+        await service._apply_venue_city(event)
+
+        assert event.cities == []
+
 
 def _create_mock_event(**kwargs) -> MagicMock:
     """Create a mock Event-like object."""

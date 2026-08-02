@@ -95,6 +95,35 @@ class TestCityClassifier:
         assert len(result) == 1
         assert result[0][0] == 2  # SPB
 
+    @pytest.mark.asyncio
+    async def test_extract_ignores_short_alias(self):
+        """Короткий alias «нн» не матчит подстроку в слове («16 тонн»)."""
+        from src.aggregator.classifiers.city_classifier import CityClassifier
+        from src.db.models.city import City
+
+        # Город Нижний Новгород с коротким alias «нн»
+        cities = _mock_cities() + [
+            City(
+                id=4, slug="nizhny-novgorod", name_ru="Нижний Новгород", name_en="Nizhny Novgorod",
+                name_ru_prepositional="в Нижнем Новгороде", name_ru_genitive="Нижнего Новгорода",
+                aliases=["нн"],
+                region="Нижегородская область",
+                is_active=True,
+            ),
+        ]
+
+        classifier = CityClassifier(None)
+        await classifier.build_index(cities)
+
+        # «16 тонн» содержит «нн» как подстроку — но короткий alias исключён
+        result = classifier.extract("Концерт в клубе «16 Тонн»", None, default_city_id=1)
+        assert len(result) >= 1
+        assert all(r[0] != 4 for r in result), "«нн» не должен матчиться как подстрока"
+
+        # Полная форма «нижний новгород» матчится нормально
+        result2 = classifier.extract("Событие в Нижнем Новгороде", None)
+        assert any(r[0] == 4 for r in result2)
+
 
 def _mock_cities():
     """Create mock cities with morphological forms."""

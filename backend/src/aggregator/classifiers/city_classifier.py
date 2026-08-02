@@ -47,8 +47,20 @@ class CityClassifier:
                 city.name_ru_genitive,
                 *city.aliases,
             ]:
-                if form and form.strip():
-                    self.city_forms[form.lower().strip()] = city.id
+                if not form or not form.strip():
+                    continue
+                form = form.lower().strip()
+                # Формы ≤2 символа (alias «нн» для Нижнего Новгорода) матчатся
+                # как подстрока любых слов («16 тонн» → «нн») — это ложные
+                # срабатывания. Исключаем их из индекса.
+                if len(form) <= 2:
+                    logger.debug(
+                        "city_form_skipped_short",
+                        city=city.slug,
+                        form=form,
+                    )
+                    continue
+                self.city_forms[form] = city.id
 
         logger.debug(
             "city_index_built",
