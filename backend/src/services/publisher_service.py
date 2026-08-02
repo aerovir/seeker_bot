@@ -147,12 +147,18 @@ class PublisherService:
         emoji = PublisherService._get_event_emoji(event.event_type)
         lines.append(f"{emoji} <b>{event.title}</b>")
 
-        # Venue
+        # Venue — название места жирным, адрес отдельной строкой
+        venue_added = False
         if event.venue_name:
-            line = f"📍 {event.venue_name}"
+            lines.append("")
+            lines.append(f"📍 <b>{event.venue_name}</b>")
             if event.venue_address:
-                line += f"\n   {event.venue_address}"
-            lines.append(line)
+                lines.append(f"   {event.venue_address}")
+            venue_added = True
+        elif event.venue_address:
+            lines.append("")
+            lines.append(f"📍 {event.venue_address}")
+            venue_added = True
 
         # Cities
         city_names = []
@@ -161,6 +167,8 @@ class PublisherService:
                 if hasattr(assignment, "city") and assignment.city:
                     city_names.append(assignment.city.name_ru)
         if city_names:
+            if not venue_added:
+                lines.append("")
             lines.append(f"🏛 {', '.join(city_names)}")
 
         # Dates
@@ -180,7 +188,7 @@ class PublisherService:
         # Description
         if event.short_description:
             lines.append("")
-            lines.append(event.short_description[:200])
+            lines.append(event.short_description[:300])
 
         # Categories
         cat_names = []
@@ -193,6 +201,25 @@ class PublisherService:
         if cat_names:
             lines.append("")
             lines.append("🏷 " + " · ".join(cat_names))
+
+        # Хэштеги — город и категории (Telegram поддерживает кириллицу)
+        tags = []
+        for city in city_names:
+            tag = PublisherService._to_hashtag(city)
+            if tag:
+                tags.append(tag)
+        cat_tag_names = []
+        if hasattr(event, "categories") and event.categories:
+            for assignment in event.categories:
+                if hasattr(assignment, "category") and assignment.category:
+                    cat_tag_names.append(assignment.category.name_ru)
+        for cat in cat_tag_names:
+            tag = PublisherService._to_hashtag(cat)
+            if tag:
+                tags.append(tag)
+        if tags:
+            lines.append("")
+            lines.append(" ".join(f"#{t}" for t in tags))
 
         text = "\n".join(lines)
 
@@ -216,6 +243,14 @@ class PublisherService:
             kb["inline_keyboard"].append(row)
 
         return text, kb if kb["inline_keyboard"] else None
+
+    @staticmethod
+    def _to_hashtag(text: str) -> str:
+        """Преобразовать строку в хэштег: #нижний_новгород, #концерты."""
+        tag = "".join(
+            ch if ch.isalnum() else "_" for ch in text.lower()
+        ).strip("_")
+        return tag if tag else ""
 
     async def publish_post(
         self,

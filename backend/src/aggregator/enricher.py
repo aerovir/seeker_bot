@@ -5,7 +5,11 @@ Adds ticket links, prices, and images to raw events.
 Integrates with ticket adapters (Yandex Afisha, Kassir, etc.).
 """
 
+import asyncio
+from urllib.parse import urlsplit
+
 from src.aggregator.models import RawEvent, EnrichedEvent
+from src.aggregator.scrapers.venue_scraper import scrape_venue
 from src.tickets.adapters import YandexAfishaAdapter, KassirAdapter, DirectLinkAdapter
 from src.common.logging import logger
 
@@ -15,6 +19,9 @@ DEFAULT_ADAPTERS = [
     KassirAdapter(),
     DirectLinkAdapter(),
 ]
+
+# Максимум параллельных запросов к страницам событий при скрейпинге места
+VENUE_SCRAPE_CONCURRENCY = 5
 
 
 class Enricher:
@@ -40,8 +47,42 @@ class Enricher:
             await self._enrich_tickets(enriched_event, raw, self.ticket_adapters)
             enriched.append(enriched_event)
 
+        # Параллельный скрейпинг места/адреса (только gorodskoyportal)
+        await self._enrich_venues(enriched)
+
         logger.debug("enrichment_complete", count=len(enriched))
         return enriched
+
+    async def _enrich_venues(self, events: list[EnrichedEvent]) -> None:
+        """Заполнить venue_name/venue_address скрейпингом страниц события.
+
+        Параллельно с ограничением, fail-safe: недоступная страница не
+        роняет парсинг. Пропускаем события, у которых место уже есть.
+        """
+        to_scrape = [
+            e for e in events
+            if e.url and "gorodskoyportal" in urlsplit(e.url).netloc
+            and not e.venue_name
+        ]
+        if not to_scrape:
+            return
+
+        sem = asyncio.Semaphore(VENUE_SCRAPE_CONCURRENCY)
+
+        async def _scrape_one(event: EnrichedEvent) -> None:
+            async with sem:
+                venue = await scrape_venue(event.url)
+                if venue:
+                    event.venue_name = venue.name or event.venue_name
+                    event.venue_address = venue.address or event.venue_address
+
+        results = await asyncio.gather(
+            *(_scrape_one(e) for e in to_scrape),
+            return_exceptions=True,
+        )
+        for r in results:
+            if isinstance(r, Exception):
+                logger.warning("venue_enrich_error", error=str(r))
 
     async def _enrich_tickets(
         self,
