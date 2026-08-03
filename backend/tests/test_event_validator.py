@@ -17,6 +17,14 @@ class TestHtmlToText:
         assert "<p>" not in text
         assert "&mdash;" not in text
 
+    def test_html_to_text_truncates_long(self):
+        """Длинное описание обрезается до лимита колонки (1024)."""
+        from src.aggregator.validators.event_validator import html_to_text, SHORT_DESC_LIMIT
+
+        long_html = f"<p>{'слово' * 400}</p>"  # >1024 символов
+        text = html_to_text(long_html)
+        assert len(text) <= SHORT_DESC_LIMIT
+
     def test_html_to_text_empty(self):
         """Пустое значение → пустая строка."""
         from src.aggregator.validators.event_validator import html_to_text
