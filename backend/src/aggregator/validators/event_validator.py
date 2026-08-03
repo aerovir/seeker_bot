@@ -54,13 +54,20 @@ class ValidationResult:
         self.venue_address = venue_address
 
 
+# Ограничение колонки events.short_description (String(1024)).
+# Обрезаем здесь, чтобы auto_queue не падал с
+# StringDataRightTruncationError при длинном описании.
+SHORT_DESC_LIMIT = 1024
+
+
 def html_to_text(value: str | None) -> str:
-    """Конвертировать HTML-описание в чистый текст."""
+    """Конвертировать HTML-описание в чистый текст (обрезанный до 1024)."""
     if not value:
         return ""
     soup = BeautifulSoup(value, "lxml")
     text = soup.get_text(" ", strip=True)
-    return html.unescape(text)
+    text = html.unescape(text)
+    return text[:SHORT_DESC_LIMIT]
 
 
 async def _fetch_bytes(url: str, session: aiohttp.ClientSession, timeout: int) -> bytes:
