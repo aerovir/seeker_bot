@@ -18,6 +18,9 @@ from src.common.logging import logger
 from src.config import settings
 from src.aggregator.validators.event_validator import validate_event, html_to_text
 
+# Предел описания в посте канала (символов)
+POST_DESC_LIMIT = 1500
+
 
 class PublisherService:
     """Business logic for publishing events to Telegram channel."""
@@ -193,13 +196,14 @@ class PublisherService:
         if price_str:
             lines.append(f"💰 {price_str}")
 
-        # Description — fallback на html_to_text(description) если short пуст
+        # Description — fallback на html_to_text(description) если short пуст.
+        # Показываем полное описание (до POST_DESC_LIMIT символов).
         desc_text = event.short_description
         if not desc_text and isinstance(event.description, str) and event.description:
             desc_text = html_to_text(event.description)
         if desc_text:
             lines.append("")
-            lines.append(desc_text[:300])
+            lines.append(desc_text[:POST_DESC_LIMIT])
 
         # Categories
         cat_names = []
