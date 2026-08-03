@@ -21,6 +21,11 @@ from src.aggregator.validators.event_validator import validate_event, html_to_te
 # Предел описания в посте канала (символов)
 POST_DESC_LIMIT = 1500
 
+# Лимит подписи (caption) у фото в Telegram — 1024 символа.
+# Если описание длиннее, send_photo падает (caption too long) → фото теряется.
+# Для фото caption обрезается до этого лимита.
+TG_PHOTO_CAPTION_LIMIT = 1024
+
 
 class PublisherService:
     """Business logic for publishing events to Telegram channel."""
@@ -296,14 +301,23 @@ class PublisherService:
             # Send photo if available
             if post.event.image_url:
                 try:
+                    # Лимит caption у фото в Telegram = 1024. Если описание
+                    # длиннее — фото не отправится (caption too long).
+                    # Обрезаем caption, сохраняя фото.
+                    photo_caption = text[:TG_PHOTO_CAPTION_LIMIT]
                     message = await bot.send_photo(
                         chat_id=post.channel_id,
                         photo=post.event.image_url,
-                        caption=text,
+                        caption=photo_caption,
                         parse_mode=parse_mode,
                         reply_markup=markup,
                     )
-                except Exception:
+                except Exception as e:
+                    logger.warning(
+                        "publish_photo_fallback",
+                        post_id=post.id,
+                        error=str(e)[:200],
+                    )
                     # Fallback to text-only
                     message = await bot.send_message(
                         chat_id=post.channel_id,

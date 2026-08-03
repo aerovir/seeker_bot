@@ -133,6 +133,45 @@ class TestPublisherService:
         assert len(lines[0]) <= POST_DESC_LIMIT
 
     @pytest.mark.asyncio
+    async def test_publish_post_truncates_photo_caption(self):
+        """Длинный пост: caption фото обрезается до 1024, фото сохраняется."""
+        from src.services.publisher_service import PublisherService, TG_PHOTO_CAPTION_LIMIT
+        from src.db.models.post_queue import PostQueue
+        from src.common.constants import PostStatus
+
+        mock_session = AsyncMock()
+        mock_session.flush = AsyncMock()
+
+        event = _create_mock_event(
+            title="Алекс Лим",
+            event_type="concert",
+            short_description="описание " * 120,  # ~1000+ символов → пост >1024
+            image_url="http://img/1.jpg",
+            cities=[MagicMock(city=MagicMock(name_ru="Москва"))],
+            categories=[],
+        )
+
+        post = PostQueue(
+            event_id=1, channel_id="@test", status=PostStatus.SCHEDULED,
+            scheduled_at=datetime.now(timezone.utc),
+        )
+        post.event = event
+
+        bot = AsyncMock()
+        bot.send_photo = AsyncMock(return_value=MagicMock(message_id=1))
+
+        service = PublisherService(mock_session)
+        ok = await service.publish_post(post, bot)
+
+        assert ok is True
+        bot.send_photo.assert_awaited_once()
+        # caption обрезан до лимита Telegram
+        caption = bot.send_photo.call_args.kwargs["caption"]
+        assert len(caption) <= TG_PHOTO_CAPTION_LIMIT
+        # фото передано
+        assert bot.send_photo.call_args.kwargs["photo"] == "http://img/1.jpg"
+
+    @pytest.mark.asyncio
     async def test_schedule_post(self):
         """schedule_post adds event to post queue."""
         from src.services.publisher_service import PublisherService
