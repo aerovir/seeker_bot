@@ -54,10 +54,10 @@ class ValidationResult:
         self.venue_address = venue_address
 
 
-# Ограничение колонки events.short_description (String(1024)).
-# Обрезаем здесь, чтобы auto_queue не падал с
-# StringDataRightTruncationError при длинном описании.
-SHORT_DESC_LIMIT = 1024
+# Предел описания в посте: показываем до 1500 символов (покрывает ~95%
+# описаний источников; максимум достигает ~3000). Колонка events.short_description
+# теперь Text, но лимит не даёт раздувать БД сверх нужды.
+SHORT_DESC_LIMIT = 1500
 
 
 def html_to_text(value: str | None) -> str:

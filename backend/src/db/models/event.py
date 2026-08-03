@@ -19,7 +19,7 @@ class Event(Base):
 
     title: Mapped[str] = mapped_column(String(512), index=True)
     description: Mapped[str | None] = mapped_column(Text)
-    short_description: Mapped[str | None] = mapped_column(String(1024))
+    short_description: Mapped[str | None] = mapped_column(Text)
 
     url: Mapped[str | None] = mapped_column(String(2048))
     image_url: Mapped[str | None] = mapped_column(String(2048))

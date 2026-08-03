@@ -99,6 +99,39 @@ class TestPublisherService:
         # No ticket_url or url = no inline keyboard
         assert markup is None
 
+    def test_build_channel_message_keeps_short_description(self):
+        """Короткое описание (500 симв.) не обрезается в посте."""
+        from src.services.publisher_service import PublisherService
+
+        desc = "Описание " * 50  # ~450 символов
+        event = _create_mock_event(
+            title="Тест", event_type="concert",
+            short_description=desc,
+        )
+
+        service = PublisherService(AsyncMock())
+        text, _ = service.build_channel_message(event)
+
+        assert desc in text  # полное описание на месте
+
+    def test_build_channel_message_truncates_to_1500(self):
+        """Длинное описание (2000) обрезается до 1500 в посте."""
+        from src.services.publisher_service import PublisherService, POST_DESC_LIMIT
+
+        event = _create_mock_event(
+            title="Тест", event_type="concert",
+            short_description="слово " * 400,  # ~2000 символов
+        )
+
+        service = PublisherService(AsyncMock())
+        text, _ = service.build_channel_message(event)
+
+        # Найти блок описания (после заголовка) и проверить его длину
+        # Описание — самый длинный фрагмент текста поста
+        lines = [l for l in text.split("\n") if len(l) > 100]
+        assert lines, "описание должно быть в посте"
+        assert len(lines[0]) <= POST_DESC_LIMIT
+
     @pytest.mark.asyncio
     async def test_schedule_post(self):
         """schedule_post adds event to post queue."""
