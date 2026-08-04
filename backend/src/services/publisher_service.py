@@ -465,15 +465,23 @@ class PublisherService:
         if not city:
             return
 
-        # Заменить город события (убрать старые назначения, поставить верный)
-        if event.cities:
-            event.cities.clear()
-        assignment = EventCityAssignment(
+        # Заменить город события (убрать старые назначения, поставить верный).
+        # Работаем через SQL напрямую, а не через event.cities: это lazy
+        # relationship, не загруженный в get_candidates — обращение к нему
+        # падает с greenlet_spawn в async-контексте.
+        from sqlalchemy import delete
+
+        await self.session.execute(
+            delete(EventCityAssignment).where(
+                EventCityAssignment.event_id == event.id
+            )
+        )
+        self.session.add(EventCityAssignment(
+            event_id=event.id,
             city_id=city.id,
             confidence=1.0,
             method="venue_address",
-        )
-        event.cities.append(assignment)
+        ))
         logger.info(
             "event_city_from_venue",
             event_id=event.id,

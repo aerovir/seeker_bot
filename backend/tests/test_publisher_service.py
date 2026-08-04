@@ -367,9 +367,14 @@ class TestPublisherService:
 
         await service._apply_venue_city(event)
 
-        assert len(event.cities) == 1
-        assert event.cities[0].city_id == 1
-        assert event.cities[0].method == "venue_address"
+        # Новый EventCityAssignment добавлен через session.add
+        added = [a for a in mock_session.add.call_args_list]
+        assert added, "EventCityAssignment должен быть добавлен"
+        assignment = added[0].args[0]
+        from src.db.models.event import EventCityAssignment
+        assert isinstance(assignment, EventCityAssignment)
+        assert assignment.city_id == 1
+        assert assignment.method == "venue_address"
 
     @pytest.mark.asyncio
     async def test_apply_venue_city_no_address(self):
